@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title> Create Account - Mpumalanga AI Career Bridge</title>
+  <style>
+    :root {
+      --black: #000000;
+      --dark-blue: #14213d;
+      --light-blue: #3498db;
+      --light-gray: #e5e5e5;
+      --white: #ffffff;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: var(--light-gray);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    .container {
+      background-color: var(--light-blue);
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      padding: 2rem 3rem;
+      width: 400px;
+      text-align: center;
+    }
+
+    h2 {
+      color: var(--orange);
+      margin-bottom: 1rem;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    input, select {
+      padding: 0.75rem;
+      border-radius: 6px;
+      border: 1px solid var(--light-gray);
+      font-size: 1rem;
+    }
+
+    button {
+      background-color: var(--orange);
+      color: var(--white);
+      border: none;
+      padding: 0.75rem;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #032d55;
+    }
+
+    .switch {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .switch a {
+      color: var(--dark-blue);
+      text-decoration: none;
+    }
+
+    .switch a:hover {
+      text-decoration: underline;
+    }
+
+    .error {
+      color: red;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Create Account</h2>
+  <form id="signupForm" onsubmit="return validateForm()">
+    <input type="text" id="fullname" placeholder="Full Name" required>
+    <input type="email" id="email" placeholder="Email Address" required>
+    <input type="password" id="password" placeholder="Create Password" required>
+    <input type="password" id="confirmPassword" placeholder="Confirm Password" required>
+    
+    
+    <select id="grade" required onchange="toggleStream()">
+      <option value="">Select Grade</option>
+      <option value="9">Grade 9</option>
+      <option value="10">Grade 10</option>
+      <option value="11">Grade 11</option>
+      <option value="12">Grade 12</option>
+    </select>
+
+    
+    <select id="stream" style="display: none;">
+      <option value="">Select Stream</option>
+      <option value="science">Science</option>
+      <option value="accounting">Accounting</option>
+      <option value="tourism">Tourism</option>
+      <option value="hospitality">Hospitality</option>
+    </select>
+
+    <button type="submit">Sign Up</button>
+    <p class="error" id="errorMessage"></p>
+  </form>
+
+  <div class="switch">
+    Already have an account? <a href="login.html">Sign In</a>
+  </div>
+</div>
+
+
+ <script>
+  function toggleStream() {
+    const grade = document.getElementById("grade").value;
+    const stream = document.getElementById("stream");
+
+    if (grade === "10" || grade === "11" || grade === "12") {
+      stream.style.display = "block";
+      stream.setAttribute("required", "true");
+    } else {
+      stream.style.display = "none";
+      stream.removeAttribute("required");
+      stream.value = "";
+    }
+  }
+
+  function validateForm() {
+    const password = document.getElementById("password").value.trim();
+    const confirmPassword = document.getElementById("confirmPassword").value.trim();
+    const errorMessage = document.getElementById("errorMessage");
+
+    const strongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+    if (!strongPassword.test(password)) {
+      errorMessage.textContent =
+        "Password must have at least 8 characters, with uppercase, lowercase, number, and special symbol.";
+      return false;
+    }
+
+    if (password !== confirmPassword) {
+      errorMessage.textContent = "Passwords do not match.";
+      return false;
+    }
+
+    errorMessage.textContent = "";
+    alert("Account created successfully!");
+
+    setTimeout(() => {
+      window.location.href = "login.html";
+    }, 1500);
+
+    return false; // stop actual form submission
+  }
+</script>
+
+</body>
+</html>
