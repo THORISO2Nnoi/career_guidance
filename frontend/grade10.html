@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grade 10 - Stream Selection</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Grade 10 - Stream Selection</h1>
+        <p>Discover your academic streams and where they're offered in Mpumalanga</p>
+    </header>
+    
+    <main>
+        <div class="container">
+            <div class="back-button">
+                <a href="index.html">&larr; Back to Home</a>
+            </div>
+            
+            <div class="steps">
+                <div class="step active" id="step1">
+                    <h2>Upload Your Grade 9 Results</h2>
+                    <div class="upload-area" id="uploadArea">
+                        <p>Drag & drop your results file here or</p>
+                        <input type="file" id="resultsFile" accept=".pdf,.jpg,.jpeg,.png">
+                        <label for="resultsFile" class="btn">Choose File</label>
+                        <p class="file-info">Supported formats: PDF, JPG, PNG</p>
+                    </div>
+                    <button class="btn" id="analyzeBtn" disabled>Analyze Results</button>
+                </div>
+                
+                <div class="step" id="step2">
+                    <h2>Your Recommended Streams</h2>
+                    <div id="streamResults" class="results-container">
+                        <!-- Results will be populated by JavaScript -->
+                    </div>
+                    <button class="btn" id="restartBtn">Analyze Another Result</button>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <footer>
+        <p>&copy; 2023 Student Career Guidance Portal. All rights reserved.</p>
+    </footer>
+    
+    <script src="script.js"></script>
+</body>
+</html>
