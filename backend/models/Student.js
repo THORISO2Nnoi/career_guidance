@@ -17,13 +17,27 @@ const studentSchema = new mongoose.Schema({
     },
     school: String,
     contact: {
-        email: String,
+        email: {
+            type: String,
+            required: true,
+            lowercase: true,
+            trim: true
+        },
         phone: String
     },
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    updatedAt: {
+        type: Date,
+        default: Date.now
     }
+});
+
+studentSchema.pre('save', function(next) {
+    this.updatedAt = Date.now();
+    next();
 });
 
 module.exports = mongoose.model('Student', studentSchema);
