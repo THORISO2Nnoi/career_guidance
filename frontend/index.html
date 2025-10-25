@@ -3,292 +3,1036 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Career Guidance Portal</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>MPUMALANGA ai CAREER GUIDE- Student Career Guidance Portal</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-light: #4895ef;
+            --secondary: #3f37c9;
+            --accent: #f72585;
+            --success: #4cc9f0;
+            --warning: #f8961e;
+            --danger: #e63946;
+            --dark: #1d3557;
+            --light: #f8f9fa;
+            --gray: #6c757d;
+            --border-radius: 12px;
+            --shadow: 0 10px 20px rgba(0,0,0,0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f7ff;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header Styles */
+        .main-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 1.5rem 0;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-logo a {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: white;
+            text-decoration: none;
+        }
+
+        .nav-logo i {
+            font-size: 2rem;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 50px;
+            transition: var(--transition);
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .hamburger {
+            display: none;
+            cursor: pointer;
+        }
+
+        .bar {
+            display: block;
+            width: 25px;
+            height: 3px;
+            margin: 5px auto;
+            background-color: white;
+            transition: var(--transition);
+        }
+
+        /* Hero Section */
+        .hero-section {
+            padding: 4rem 0;
+            background: linear-gradient(135deg, #f5f7ff 0%, #e6eeff 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        .hero-text h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.2;
+        }
+
+        .hero-text p {
+            font-size: 1.2rem;
+            color: var(--gray);
+            margin-bottom: 2rem;
+        }
+
+        .hero-features {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .feature {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+        }
+
+        .feature i {
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+
+        .hero-visual {
+            position: relative;
+            height: 400px;
+        }
+
+        .floating-card {
+            position: absolute;
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .floating-card:nth-child(1) {
+            top: 0;
+            left: 0;
+            animation-delay: 0s;
+        }
+
+        .floating-card:nth-child(2) {
+            top: 30%;
+            right: 0;
+            animation-delay: 2s;
+        }
+
+        .floating-card:nth-child(3) {
+            bottom: 0;
+            left: 20%;
+            animation-delay: 4s;
+        }
+
+        .card-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .card-icon.blue {
+            background: rgba(67, 97, 238, 0.1);
+            color: var(--primary);
+        }
+
+        .card-icon.pink {
+            background: rgba(247, 37, 133, 0.1);
+            color: var(--accent);
+        }
+
+        .card-icon.green {
+            background: rgba(76, 201, 240, 0.1);
+            color: var(--success);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        /* Grade Cards Section */
+        .grade-section {
+            padding: 4rem 0;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-title h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--dark);
+        }
+
+        .section-title p {
+            font-size: 1.2rem;
+            color: var(--gray);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .grade-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+        }
+
+        .grade-card {
+            background: white;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .grade-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+        }
+
+        .grade-card.featured {
+            border: 2px solid var(--primary);
+        }
+
+        .featured-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--accent);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .card-header {
+            padding: 2rem 2rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .grade-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .grade-9 .grade-icon {
+            background: linear-gradient(135deg, #4cc9f0 0%, #4895ef 100%);
+        }
+
+        .grade-10 .grade-icon {
+            background: linear-gradient(135deg, #f8961e 0%, #f3722c 100%);
+        }
+
+        .grade-11-12 .grade-icon {
+            background: linear-gradient(135deg, #7209b7 0%, #3a0ca3 100%);
+        }
+
+        .grade-info h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .grade-info p {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        .card-body {
+            padding: 0 2rem 1.5rem;
+        }
+
+        .card-body p {
+            margin-bottom: 1.5rem;
+            color: var(--gray);
+        }
+
+        .feature-list {
+            list-style: none;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-list li {
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .feature-list i {
+            color: var(--primary);
+        }
+
+        .card-footer {
+            padding: 1.5rem 2rem;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .start-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--primary);
+            font-weight: 600;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .start-link:hover {
+            gap: 12px;
+        }
+
+        /* AI Assistant Section */
+        .ai-section {
+            padding: 4rem 0;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+
+        .ai-card {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 3rem;
+            box-shadow: var(--shadow);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        .ai-content h2 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--dark);
+        }
+
+        .ai-content p {
+            font-size: 1.1rem;
+            color: var(--gray);
+            margin-bottom: 2rem;
+        }
+
+        .ai-features {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .ai-feature {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+        }
+
+        .ai-feature i {
+            color: var(--primary);
+        }
+
+        .ai-visual {
+            position: relative;
+            height: 300px;
+        }
+
+        .chat-bubble {
+            position: absolute;
+            background: white;
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            max-width: 250px;
+        }
+
+        .chat-bubble:nth-child(1) {
+            top: 0;
+            left: 0;
+            border-bottom-left-radius: 5px;
+        }
+
+        .chat-bubble:nth-child(2) {
+            bottom: 0;
+            right: 0;
+            border-bottom-right-radius: 5px;
+        }
+
+        .chat-bubble i {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .subject-tags {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .subject-tag {
+            background: var(--primary);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        /* Stats Section */
+        .stats-section {
+            padding: 3rem 0;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 2rem;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .stat-item:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--gray);
+            font-weight: 500;
+        }
+
+        /* Footer */
+        .main-footer {
+            background: var(--dark);
+            color: white;
+            padding: 3rem 0 1rem;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-section h4 {
+            margin-bottom: 1.5rem;
+            font-size: 1.2rem;
+        }
+
+        .footer-section p {
+            color: #bdc3c7;
+            margin-bottom: 1rem;
+        }
+
+        .footer-section a {
+            color: #bdc3c7;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 0.8rem;
+            transition: var(--transition);
+        }
+
+        .footer-section a:hover {
+            color: white;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .social-link {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .social-link:hover {
+            background: var(--primary);
+            transform: translateY(-3px);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #bdc3c7;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: var(--transition);
+            border: none;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
+        }
+
+        .btn-lg {
+            padding: 15px 30px;
+            font-size: 1.1rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .hero-content {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            
+            .ai-card {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hamburger {
+                display: block;
+            }
+
+            .hamburger.active .bar:nth-child(2) {
+                opacity: 0;
+            }
+
+            .hamburger.active .bar:nth-child(1) {
+                transform: translateY(8px) rotate(45deg);
+            }
+
+            .hamburger.active .bar:nth-child(3) {
+                transform: translateY(-8px) rotate(-45deg);
+            }
+
+            .nav-menu {
+                position: fixed;
+                left: -100%;
+                top: 70px;
+                flex-direction: column;
+                background: var(--dark);
+                width: 100%;
+                text-align: center;
+                transition: 0.3s;
+                padding: 2rem 0;
+                gap: 0;
+            }
+
+            .nav-menu.active {
+                left: 0;
+            }
+
+            .nav-item {
+                margin: 15px 0;
+            }
+
+            .hero-text h1 {
+                font-size: 2.2rem;
+            }
+            
+            .grade-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .ai-features {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero-text h1 {
+                font-size: 1.8rem;
+            }
+            
+            .section-title h2 {
+                font-size: 2rem;
+            }
+            
+            .ai-card {
+                padding: 2rem;
+            }
+            
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
+    <!-- Header -->
     <header class="main-header">
-        <div class="header-content">
-            <h1 class="header-title">
-                <i class="fas fa-compass"></i>
-                Student Career Guidance Portal
-            </h1>
-            <p class="header-subtitle">Your intelligent pathway to academic and career success</p>
-        </div>
-        <div class="header-graphic">
-            <div class="graphic-item">
-                <i class="fas fa-brain"></i>
-                <span>AI-Powered Analysis</span>
-            </div>
-            <div class="graphic-item">
-                <i class="fas fa-road"></i>
-                <span>Personalized Pathways</span>
-            </div>
-            <div class="graphic-item">
-                <i class="fas fa-rocket"></i>
-                <span>Future-Ready Skills</span>
-            </div>
+        <div class="container">
+            <nav class="nav-container">
+                <div class="nav-logo">
+                    <i class="fas fa-compass"></i>
+                    <a href="index.html">MPUMALANGA AI CAREER GUIDE </a>
+                </div>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="index.html" class="nav-link active">
+                            <i class="fas fa-home"></i>
+                            Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="grade9.html" class="nav-link">
+                            <i class="fas fa-seedling"></i>
+                            Grade 9
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="grade10.html" class="nav-link">
+                            <i class="fas fa-star"></i>
+                            Grade 10
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="grade11-12.html" class="nav-link">
+                            <i class="fas fa-trophy"></i>
+                            Grade 11-12
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="learning-chatboard.html" class="nav-link">
+                            <i class="fas fa-robot"></i>
+                            AI Learning
+                        </a>
+                    </li>
+                </ul>
+                <div class="hamburger">
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                </div>
+            </nav>
         </div>
     </header>
-    
-    <main class="main-content">
+
+    <!-- Hero Section -->
+    <section class="hero-section">
         <div class="container">
-            <div class="welcome-section">
-                <div class="welcome-card">
-                    <div class="welcome-content">
-                        <h2>Welcome to Your Career Journey</h2>
-                        <p>Discover your potential, explore career paths, and make informed decisions about your future with our intelligent guidance system.</p>
-                        <div class="feature-highlights">
-                            <div class="feature-item">
-                                <i class="fas fa-calculator"></i>
-                                <span>APS Calculation</span>
-                            </div>
-                            <div class="feature-item">
-                                <i class="fas fa-chart-line"></i>
-                                <span>Career Analysis</span>
-                            </div>
-                            <div class="feature-item">
-                                <i class="fas fa-graduation-cap"></i>
-                                <span>University Matching</span>
-                            </div>
-                            <div class="feature-item">
-                                <i class="fas fa-comments"></i>
-                                <span>AI Learning Assistant</span>
-                            </div>
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h1>Your Pathway to Academic and Career Success</h1>
+                    <p>Discover your potential, explore career paths, and make informed decisions with our intelligent guidance system powered by AI technology.</p>
+                    <a href="#grades" class="btn btn-primary btn-lg">
+                        <i class="fas fa-rocket"></i>
+                        Explore Your Options
+                    </a>
+                    
+                    <div class="hero-features">
+                        <div class="feature">
+                            <i class="fas fa-calculator"></i>
+                            <span>APS Calculator</span>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Career Analysis</span>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-graduation-cap"></i>
+                            <span>University Matching</span>
                         </div>
                     </div>
-                    <div class="welcome-visual">
-                        <div class="floating-icon">
-                            <i class="fas fa-graduation-cap"></i>
+                </div>
+                <div class="hero-visual">
+                    <div class="floating-card">
+                        <div class="card-icon blue">
+                            <i class="fas fa-brain"></i>
                         </div>
-                        <div class="floating-icon">
-                            <i class="fas fa-briefcase"></i>
+                        <div>
+                            <h4>AI-Powered Analysis</h4>
+                            <p>Smart career recommendations</p>
                         </div>
-                        <div class="floating-icon">
-                            <i class="fas fa-university"></i>
+                    </div>
+                    <div class="floating-card">
+                        <div class="card-icon pink">
+                            <i class="fas fa-road"></i>
+                        </div>
+                        <div>
+                            <h4>Personalized Pathways</h4>
+                            <p>Tailored to your strengths</p>
+                        </div>
+                    </div>
+                    <div class="floating-card">
+                        <div class="card-icon green">
+                            <i class="fas fa-rocket"></i>
+                        </div>
+                        <div>
+                            <h4>Future-Ready Skills</h4>
+                            <p>Prepare for tomorrow's jobs</p>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
+    </section>
 
-            <div class="quick-access">
-                <h2 class="section-title">
-                    <i class="fas fa-bolt"></i>
-                    Quick Access
-                </h2>
-                <div class="quick-cards">
-                    <div class="quick-card" onclick="location.href='learning-chatboard.html'">
-                        <div class="quick-icon ai-assistant">
-                            <i class="fas fa-robot"></i>
+    <!-- Grade Cards Section -->
+    <section class="grade-section" id="grades">
+        <div class="container">
+            <div class="section-title">
+                <h2>Find Your Career Path</h2>
+                <p>Select your grade level to access personalized career guidance and academic planning</p>
+            </div>
+            
+            <div class="grade-cards">
+                <!-- Grade 9 Card -->
+                <div class="grade-card grade-9">
+                    <div class="card-header">
+                        <div class="grade-icon">
+                            <i class="fas fa-seedling"></i>
                         </div>
-                        <h3>AI Learning Assistant</h3>
-                        <p>Get instant explanations and generate practical learning videos for any subject</p>
-                        <div class="quick-badge new">NEW</div>
-                    </div>
-                    
-                    <div class="quick-card" onclick="location.href='grade11-12.html'">
-                        <div class="quick-icon grade-12">
-                            <i class="fas fa-trophy"></i>
+                        <div class="grade-info">
+                            <h3>Grade 9</h3>
+                            <p>College Path Selection</p>
                         </div>
-                        <h3>Grade 11-12 APS Calculator</h3>
-                        <p>Calculate your APS and discover university courses aligned with your results</p>
                     </div>
-                    
-                    <div class="quick-card" onclick="location.href='grade10.html'">
-                        <div class="quick-icon grade-10">
+                    <div class="card-body">
+                        <p>Upload your results, add your skills, and get personalized recommendations for in-demand skills development.</p>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check"></i> Skills assessment</li>
+                            <li><i class="fas fa-check"></i> Career interest matching</li>
+                            <li><i class="fas fa-check"></i> Skill development plan</li>
+                        </ul>
+                    </div>
+                    <div class="card-footer">
+                        <a href="grade9.html" class="start-link">
+                            Start Your Journey <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Grade 10 Card -->
+                <div class="grade-card grade-10 featured">
+                    <div class="featured-badge">Most Popular</div>
+                    <div class="card-header">
+                        <div class="grade-icon">
                             <i class="fas fa-star"></i>
                         </div>
-                        <h3>Grade 10 Stream Selector</h3>
-                        <p>Find the perfect academic stream based on your Grade 9 results</p>
+                        <div class="grade-info">
+                            <h3>Grade 10</h3>
+                            <p>Stream Selection & Planning</p>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p>Upload your Grade 9 results to discover available academic streams and where they're offered in Mpumalanga.</p>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check"></i> Stream recommendations</li>
+                            <li><i class="fas fa-check"></i> School availability</li>
+                            <li><i class="fas fa-check"></i> Career pathway analysis</li>
+                        </ul>
+                    </div>
+                    <div class="card-footer">
+                        <a href="grade10.html" class="start-link">
+                            Choose Your Stream <i class="fas fa-arrow-right"></i>
+                        </a>
                     </div>
                 </div>
-            </div>
-
-            <div class="grade-options-section">
-                <h2 class="section-title">
-                    <i class="fas fa-user-graduate"></i>
-                    Select Your Grade Level
-                </h2>
-                <p class="section-subtitle">Choose your grade to access personalized career guidance and academic planning</p>
                 
-                <div class="grade-options">
-                    <div class="grade-card" onclick="location.href='grade9.html'">
-                        <div class="card-header">
-                            <div class="grade-icon">
-                                <i class="fas fa-seedling"></i>
-                            </div>
-                            <div class="grade-badge">Foundation</div>
+                <!-- Grade 11-12 Card -->
+                <div class="grade-card grade-11-12">
+                    <div class="card-header">
+                        <div class="grade-icon">
+                            <i class="fas fa-trophy"></i>
                         </div>
-                        <h3>Grade 9</h3>
-                        <p class="card-subtitle">College Path Selection</p>
-                        <div class="card-description">
-                            <p>Upload your results, add your skills, and get personalized recommendations for in-demand skills development.</p>
-                            <ul class="feature-list">
-                                <li><i class="fas fa-check"></i> Skills assessment</li>
-                                <li><i class="fas fa-check"></i> Career interest matching</li>
-                                <li><i class="fas fa-check"></i> Skill development plan</li>
-                            </ul>
-                        </div>
-                        <div class="card-footer">
-                            <span class="start-link">Start Your Journey <i class="fas fa-arrow-right"></i></span>
+                        <div class="grade-info">
+                            <h3>Grades 11-12</h3>
+                            <p>University & Career Planning</p>
                         </div>
                     </div>
-                    
-                    <div class="grade-card featured" onclick="location.href='grade10.html'">
-                        <div class="card-header">
-                            <div class="grade-icon">
-                                <i class="fas fa-chart-line"></i>
-                            </div>
-                            <div class="grade-badge">Critical Decision</div>
-                        </div>
-                        <div class="featured-badge">Most Popular</div>
-                        <h3>Grade 10</h3>
-                        <p class="card-subtitle">Stream Selection & Planning</p>
-                        <div class="card-description">
-                            <p>Upload your Grade 9 results to discover available academic streams and where they're offered in Mpumalanga.</p>
-                            <ul class="feature-list">
-                                <li><i class="fas fa-check"></i> Stream recommendations</li>
-                                <li><i class="fas fa-check"></i> School availability</li>
-                                <li><i class="fas fa-check"></i> Career pathway analysis</li>
-                            </ul>
-                        </div>
-                        <div class="card-footer">
-                            <span class="start-link">Choose Your Stream <i class="fas fa-arrow-right"></i></span>
-                        </div>
+                    <div class="card-body">
+                        <p>Upload your results to calculate APS and get course recommendations based on market demand and your academic performance.</p>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check"></i> APS calculation</li>
+                            <li><i class="fas fa-check"></i> University course matching</li>
+                            <li><i class="fas fa-check"></i> Career opportunity analysis</li>
+                        </ul>
                     </div>
-                    
-                    <div class="grade-card" onclick="location.href='grade11-12.html'">
-                        <div class="card-header">
-                            <div class="grade-icon">
-                                <i class="fas fa-rocket"></i>
-                            </div>
-                            <div class="grade-badge">Advanced</div>
-                        </div>
-                        <h3>Grades 11-12</h3>
-                        <p class="card-subtitle">University & Career Planning</p>
-                        <div class="card-description">
-                            <p>Upload your results to calculate APS and get course recommendations based on market demand and your academic performance.</p>
-                            <ul class="feature-list">
-                                <li><i class="fas fa-check"></i> APS calculation</li>
-                                <li><i class="fas fa-check"></i> University course matching</li>
-                                <li><i class="fas fa-check"></i> Career opportunity analysis</li>
-                            </ul>
-                        </div>
-                        <div class="card-footer">
-                            <span class="start-link">Plan Your Future <i class="fas fa-arrow-right"></i></span>
-                        </div>
+                    <div class="card-footer">
+                        <a href="grade11-12.html" class="start-link">
+                            Plan Your Future <i class="fas fa-arrow-right"></i>
+                        </a>
                     </div>
                 </div>
             </div>
+        </div>
+    </section>
 
-            <div class="ai-assistant-section">
-                <div class="ai-card">
-                    <div class="ai-content">
-                        <h2>
-                            <i class="fas fa-robot"></i>
-                            Meet Your AI Learning Assistant
-                        </h2>
-                        <p>Struggling with difficult concepts? Our AI assistant can explain any topic and generate practical learning videos to help you understand better.</p>
-                        <div class="ai-features">
-                            <div class="ai-feature">
-                                <i class="fas fa-video"></i>
-                                <span>Generate Learning Videos</span>
-                            </div>
-                            <div class="ai-feature">
-                                <i class="fas fa-question-circle"></i>
-                                <span>Instant Explanations</span>
-                            </div>
-                            <div class="ai-feature">
-                                <i class="fas fa-download"></i>
-                                <span>Download Resources</span>
-                            </div>
+    <!-- AI Assistant Section -->
+    <section class="ai-section">
+        <div class="container">
+            <div class="ai-card">
+                <div class="ai-content">
+                    <h2>
+                        <i class="fas fa-robot"></i>
+                        Meet Your AI Learning Assistant
+                    </h2>
+                    <p>Struggling with difficult concepts? Our AI assistant can explain any topic and generate practical learning videos to help you understand better.</p>
+                    
+                    <div class="ai-features">
+                        <div class="ai-feature">
+                            <i class="fas fa-video"></i>
+                            <span>Generate Learning Videos</span>
                         </div>
-                        <button class="btn btn-primary btn-lg" onclick="location.href='learning-chatboard.html'">
+                        <div class="ai-feature">
+                            <i class="fas fa-question-circle"></i>
+                            <span>Instant Explanations</span>
+                        </div>
+                        <div class="ai-feature">
+                            <i class="fas fa-download"></i>
+                            <span>Download Resources</span>
+                        </div>
+                        <div class="ai-feature">
                             <i class="fas fa-comments"></i>
-                            Launch Learning Assistant
-                        </button>
+                            <span>Interactive Chat</span>
+                        </div>
                     </div>
-                    <div class="ai-visual">
-                        <div class="chat-bubble">
-                            <i class="fas fa-comment-dots"></i>
-                            <p>Ask me anything about your subjects!</p>
-                        </div>
-                        <div class="subject-tags">
-                            <span class="subject-tag">Mathematics</span>
-                            <span class="subject-tag">Science</span>
-                            <span class="subject-tag">History</span>
-                            <span class="subject-tag">Languages</span>
-                        </div>
+                    
+                    <a href="learning-chatboard.html" class="btn btn-primary btn-lg">
+                        <i class="fas fa-comments"></i>
+                        Launch Learning Assistant
+                    </a>
+                </div>
+                <div class="ai-visual">
+                    <div class="chat-bubble">
+                        <i class="fas fa-comment-dots"></i>
+                        <p>Ask me anything about your subjects!</p>
+                    </div>
+                    <div class="chat-bubble">
+                        <i class="fas fa-lightbulb"></i>
+                        <p>I can create custom learning videos just for you!</p>
+                    </div>
+                    <div class="subject-tags">
+                        <span class="subject-tag">Mathematics</span>
+                        <span class="subject-tag">Science</span>
+                        <span class="subject-tag">History</span>
+                        <span class="subject-tag">Languages</span>
                     </div>
                 </div>
             </div>
+        </div>
+    </section>
 
-            <div class="stats-section">
-                <div class="stats-container">
-                    <div class="stat-item">
-                        <div class="stat-number" data-count="5000">0</div>
-                        <div class="stat-label">Students Helped</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number" data-count="98">0</div>
-                        <div class="stat-label">% Satisfaction</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number" data-count="250">0</div>
-                        <div class="stat-label">Career Paths</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number" data-count="50">0</div>
-                        <div class="stat-label">Schools Covered</div>
-                    </div>
+    <!-- Stats Section -->
+    <section class="stats-section">
+        <div class="container">
+            <div class="stats-container">
+                <div class="stat-item">
+                    <div class="stat-number" data-count="5000">0</div>
+                    <div class="stat-label">Students Helped</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" data-count="98">0</div>
+                    <div class="stat-label">% Satisfaction</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" data-count="250">0</div>
+                    <div class="stat-label">Career Paths</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" data-count="50">0</div>
+                    <div class="stat-label">Schools Covered</div>
                 </div>
             </div>
         </div>
-    </main>
-    
+    </section>
+
+    <!-- Footer -->
     <footer class="main-footer">
-        <div class="footer-content">
-            <div class="footer-section">
-                <h4>Career Guidance Portal</h4>
-                <p>Empowering students to make informed career decisions through intelligent analysis and personalized recommendations.</p>
-                <div class="social-links">
-                    <a href="#" class="social-link"><i class="fab fa-facebook"></i></a>
-                    <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
-                    <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
-                    <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>CareerPath Pro</h4>
+                    <p>Empowering students to make informed career decisions through intelligent analysis and personalized recommendations.</p>
+                    <div class="social-links">
+                        <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-linkedin-in"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <a href="index.html">Home</a>
+                    <a href="grade9.html">Grade 9 Guidance</a>
+                    <a href="grade10.html">Grade 10 Streams</a>
+                    <a href="grade11-12.html">Grade 11-12 APS</a>
+                    <a href="learning-chatboard.html">AI Learning Assistant</a>
+                </div>
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <a href="#">Career Tips</a>
+                    <a href="#">University Guides</a>
+                    <a href="#">Subject Help</a>
+                    <a href="#">Study Resources</a>
+                </div>
+                <div class="footer-section">
+                    <h4>Support</h4>
+                    <a href="#">Help Center</a>
+                    <a href="#">Contact Us</a>
+                    <a href="#">Feedback</a>
+                    <a href="#">FAQ</a>
                 </div>
             </div>
-            <div class="footer-section">
-                <h4>Quick Links</h4>
-                <a href="index.html">Home</a>
-                <a href="grade9.html">Grade 9 Guidance</a>
-                <a href="grade10.html">Grade 10 Streams</a>
-                <a href="grade11-12.html">Grade 11-12 APS</a>
-                <a href="learning-chatboard.html">AI Learning Assistant</a>
+            <div class="footer-bottom">
+                <p>&copy; 2023 CareerPath Pro. All rights reserved. | Empowering the next generation of leaders</p>
             </div>
-            <div class="footer-section">
-                <h4>Resources</h4>
-                <a href="#">Career Tips</a>
-                <a href="#">University Guides</a>
-                <a href="#">Subject Help</a>
-                <a href="#">Study Resources</a>
-            </div>
-            <div class="footer-section">
-                <h4>Support</h4>
-                <a href="#">Help Center</a>
-                <a href="#">Contact Us</a>
-                <a href="#">Feedback</a>
-                <a href="#">FAQ</a>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>&copy; 2023 Student Career Guidance Portal. All rights reserved. | Empowering the next generation of leaders</p>
         </div>
     </footer>
 
     <script>
+        // Mobile navigation toggle
+        const hamburger = document.querySelector('.hamburger');
+        const navMenu = document.querySelector('.nav-menu');
+
+        hamburger.addEventListener('click', () => {
+            hamburger.classList.toggle('active');
+            navMenu.classList.toggle('active');
+        });
+
+        // Close mobile menu when clicking on a link
+        document.querySelectorAll('.nav-link').forEach(n => n.addEventListener('click', () => {
+            hamburger.classList.remove('active');
+            navMenu.classList.remove('active');
+        }));
+
         // Animate stats counter
         function animateStats() {
             const statNumbers = document.querySelectorAll('.stat-number');
@@ -339,40 +1083,6 @@
                     this.style.transform = 'translateY(0)';
                 });
             });
-
-            // Add click effects to quick cards
-            const quickCards = document.querySelectorAll('.quick-card');
-            quickCards.forEach(card => {
-                card.addEventListener('click', function() {
-                    this.style.transform = 'scale(0.95)';
-                    setTimeout(() => {
-                        this.style.transform = 'scale(1)';
-                    }, 150);
-                });
-            });
-        });
-
-        // Floating animation for welcome visual
-        function animateFloatingIcons() {
-            const icons = document.querySelectorAll('.floating-icon');
-            icons.forEach((icon, index) => {
-                icon.style.animation = `float 3s ease-in-out ${index * 0.5}s infinite alternate`;
-            });
-        }
-
-        // Add floating animation CSS
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes float {
-                0% { transform: translateY(0px) rotate(0deg); }
-                100% { transform: translateY(-20px) rotate(5deg); }
-            }
-        `;
-        document.head.appendChild(style);
-
-        // Initialize animations
-        document.addEventListener('DOMContentLoaded', function() {
-            animateFloatingIcons();
         });
     </script>
 </body>

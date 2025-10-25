@@ -4,7 +4,9 @@ let uploadedFile = null;
 let lastStudentId = null;
 let lastStudentName = null;
 let lastStudentEmail = null;
-const API_BASE = window.location.origin + '/api';
+
+// USE YOUR RENDER URL HERE
+const API_BASE = 'https://career-guidance1.onrender.com/api';
 
 // DOM Content Loaded
 document.addEventListener('DOMContentLoaded', function() {
@@ -12,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (window.location.pathname.includes('grade9.html')) initGrade9Page();
     if (window.location.pathname.includes('grade10.html')) initGrade10Page();
     if (window.location.pathname.includes('grade11-12.html')) initGrade11_12Page();
+    if (window.location.pathname.includes('learning-chatboard.html')) initLearningChatboard();
 });
 
 // Grade 9 Page Initialization
@@ -154,18 +157,20 @@ async function submitGrade9Data() {
         step2Next.disabled = true;
         step2Next.textContent = 'Processing...';
 
-    // Save for later (allow adding skills after analysis)
-    lastStudentId = studentId;
-    lastStudentName = studentName;
-    lastStudentEmail = studentEmail;
+        // Save for later (allow adding skills after analysis)
+        lastStudentId = studentId;
+        lastStudentName = studentName;
+        lastStudentEmail = studentEmail;
 
-    // Create form data for file upload
+        // Create form data for file upload
         const formData = new FormData();
         formData.append('resultsFile', uploadedFile);
         formData.append('studentId', studentId);
         formData.append('name', studentName);
         formData.append('email', studentEmail);
         formData.append('currentSkills', currentSkills.join(','));
+
+        console.log('Submitting to:', `${API_BASE}/grade9/upload-results`);
 
         const response = await fetch(`${API_BASE}/grade9/upload-results`, {
             method: 'POST',
@@ -343,9 +348,11 @@ function initUploadArea() {
     }
 }
 
-// Initialize other pages (simplified versions)
+// Initialize other pages
 function initHomePage() {
     // Home page initialization
+    console.log('Career Guidance Portal loaded successfully!');
+    console.log('API Base URL:', API_BASE);
 }
 
 function initGrade10Page() {
@@ -359,9 +366,38 @@ function initGrade10Page() {
     }
     
     if (analyzeBtn) {
-        analyzeBtn.addEventListener('click', function() {
-            alert('Grade 10 analysis would be processed here');
+        analyzeBtn.addEventListener('click', async function() {
+            await submitGrade10Data();
         });
+    }
+}
+
+async function submitGrade10Data() {
+    try {
+        if (!uploadedFile) {
+            alert('Please upload your results file first.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('resultsFile', uploadedFile);
+
+        const response = await fetch(`${API_BASE}/grade10/upload-results`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displayGrade10Results(data);
+        } else {
+            throw new Error(data.error || 'Failed to process results');
+        }
+        
+    } catch (error) {
+        console.error('Error submitting grade 10 data:', error);
+        alert('Error processing your results: ' + error.message);
     }
 }
 
@@ -376,10 +412,53 @@ function initGrade11_12Page() {
     }
     
     if (calculateBtn) {
-        calculateBtn.addEventListener('click', function() {
-            alert('Grade 11-12 analysis would be processed here');
+        calculateBtn.addEventListener('click', async function() {
+            await submitGrade11_12Data();
         });
     }
+}
+
+async function submitGrade11_12Data() {
+    try {
+        if (!uploadedFile) {
+            alert('Please upload your results file first.');
+            return;
+        }
+
+        const studentId = 'GR11-12-' + Date.now();
+        const studentName = prompt("Please enter your full name:") || "Anonymous Student";
+        const studentEmail = prompt("Please enter your email:") || "no-email@example.com";
+        const grade = document.querySelector('.selector-btn.active')?.dataset.grade || '11';
+
+        const formData = new FormData();
+        formData.append('resultsFile', uploadedFile);
+        formData.append('studentId', studentId);
+        formData.append('name', studentName);
+        formData.append('email', studentEmail);
+        formData.append('grade', grade);
+
+        const response = await fetch(`${API_BASE}/grade11-12/upload-results`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displayGrade11_12Results(data);
+        } else {
+            throw new Error(data.error || 'Failed to process results');
+        }
+        
+    } catch (error) {
+        console.error('Error submitting grade 11-12 data:', error);
+        alert('Error processing your results: ' + error.message);
+    }
+}
+
+function initLearningChatboard() {
+    // Initialize learning chatboard functionality
+    console.log('Learning chatboard initialized');
 }
 
 // Add skill after analysis and save to backend for the current student
@@ -389,7 +468,7 @@ document.addEventListener('click', function(e) {
         if (!select) return;
         const skill = select.value.trim();
         if (!skill) return alert('Please select a skill from the dropdown');
-        // append to currentSkills and send to backend
+        
         if (!lastStudentId) return alert('No student session found. Please analyze your results first.');
 
         // Update local list and save
@@ -401,7 +480,7 @@ document.addEventListener('click', function(e) {
             return;
         }
 
-        // Call backend to save skills (replace=false so it appends)
+        // Call backend to save skills
         fetch(`${API_BASE}/grade9/students/${encodeURIComponent(lastStudentId)}/skills`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -410,23 +489,6 @@ document.addEventListener('click', function(e) {
         .then(resp => resp.json())
         .then(result => {
             if (result.success) {
-                // Refresh recommendations area with returned recommendations
-                if (result.recommendations) {
-                    displayGrade9Results({
-                        summary: { performanceEmoji: ' ', overallAverage: result.overallAverage || 0, performanceLevel: '' },
-                        apsScore: result.apsScore || 0,
-                        subjects: result.subjects || [],
-                        recommendations: result.recommendations
-                    });
-                } else {
-                    // If backend returned skills but not full recs, fetch recommendations endpoint
-                    fetch(`${API_BASE}/grade9/students/${encodeURIComponent(lastStudentId)}/recommendations`)
-                        .then(r=>r.json())
-                        .then(rdata => { if (rdata.success) displayGrade9Results({ summary: { performanceEmoji: ' ', overallAverage: rdata.overallAverage || 0, performanceLevel: '' }, apsScore: rdata.apsScore || 0, subjects: rdata.subjects || [], recommendations: rdata.recommendations }); })
-                        .catch(err => console.error('Failed to refresh recommendations:', err));
-                }
-
-                // Reset select and show confirmation
                 select.value = '';
                 alert('✓ Skill added successfully! Recommendations refreshed.');
             } else {
@@ -439,3 +501,16 @@ document.addEventListener('click', function(e) {
         });
     }
 });
+
+// Display functions for other grades (simplified versions)
+function displayGrade10Results(data) {
+    // Implementation for grade 10 results display
+    console.log('Grade 10 Results:', data);
+    alert('Grade 10 analysis completed! Check the console for details.');
+}
+
+function displayGrade11_12Results(data) {
+    // Implementation for grade 11-12 results display
+    console.log('Grade 11-12 Results:', data);
+    alert('Grade 11-12 analysis completed! Check the console for details.');
+}

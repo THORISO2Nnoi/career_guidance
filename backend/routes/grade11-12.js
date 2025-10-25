@@ -1,625 +1,39 @@
-const axios = require('axios');
-const NodeCache = require('node-cache');
-const cache = new NodeCache({ stdTTL: 3600 }); // Cache for 1 hour
+const express = require('express');
+const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+const Student = require('../models/Student');
+const Results = require('../models/Results');
+const Recommendations = require('../models/Recommendations');
+const OCRService = require('../services/ocrService');
 
-// Real API integrations
-const API_CONFIG = {
-    // Department of Higher Education and Training
-    DHET: {
-        baseURL: 'https://api.dhet.gov.za/v1',
-        apiKey: process.env.DHET_API_KEY
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/')
     },
-    // South African Graduate Employers Association
-    SAGEA: {
-        baseURL: 'https://api.sagea.org.za/v1',
-        apiKey: process.env.SAGEA_API_KEY
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + '-' + file.originalname)
+    }
+});
+
+const upload = multer({ 
+    storage: storage,
+    fileFilter: function (req, file, cb) {
+        const fileTypes = /jpeg|jpg|png|pdf/;
+        const extname = fileTypes.test(path.extname(file.originalname).toLowerCase());
+        const mimetype = fileTypes.test(file.mimetype);
+
+        if (mimetype && extname) {
+            return cb(null, true);
+        } else {
+            cb(new Error('Only images and PDF files are allowed'));
+        }
     },
-    // CareerJunction API
-    CAREER_JUNCTION: {
-        baseURL: 'https://api.careerjunction.co.za/v1',
-        apiKey: process.env.CAREER_JUNCTION_API_KEY
-    },
-    // PNet API
-    PNET: {
-        baseURL: 'https://api.pnet.co.za/v1',
-        apiKey: process.env.PNET_API_KEY
-    },
-    // Indeed API
-    INDEED: {
-        baseURL: 'https://api.indeed.com/v1',
-        publisherId: process.env.INDEED_PUBLISHER_ID
-    },
-    // Stats SA
-    STATS_SA: {
-        baseURL: 'https://api.statssa.gov.za/v1',
-        apiKey: process.env.STATSSA_API_KEY
-    }
-};
+    limits: { fileSize: 5000000 } // 5MB limit
+});
 
-// Real-time market data service
-class RealTimeMarketDataService {
-    constructor() {
-        this.cache = new NodeCache({ stdTTL: 1800 }); // 30 minute cache
-    }
-
-    async getCurrentMarketTrends() {
-        const cacheKey = 'market_trends';
-        const cached = this.cache.get(cacheKey);
-        if (cached) return cached;
-
-        try {
-            const [
-                employmentData,
-                jobPostings,
-                graduateOutcomes,
-                industryGrowth
-            ] = await Promise.all([
-                this.getEmploymentStatistics(),
-                this.getJobPostingTrends(),
-                this.getGraduateEmploymentOutcomes(),
-                this.getIndustryGrowthData()
-            ]);
-
-            const marketTrends = {
-                highDemandFields: await this.getHighDemandFields(),
-                growingSectors: await this.getGrowingSectors(),
-                scarceSkills: await this.getScarceSkills(),
-                employmentRates: employmentData,
-                jobPostingTrends: jobPostings,
-                graduateOutcomes: graduateOutcomes,
-                industryGrowth: industryGrowth,
-                lastUpdated: new Date().toISOString()
-            };
-
-            this.cache.set(cacheKey, marketTrends);
-            return marketTrends;
-
-        } catch (error) {
-            console.error('Error fetching market trends:', error);
-            return await this.getFallbackMarketData();
-        }
-    }
-
-    async getEmploymentStatistics() {
-        try {
-            // Stats SA Quarterly Labour Force Survey data
-            const response = await axios.get(
-                `${API_CONFIG.STATS_SA.baseURL}/qlfs/latest`,
-                { headers: { 'Authorization': `Bearer ${API_CONFIG.STATS_SA.apiKey}` } }
-            );
-
-            return {
-                'Information Technology': this.calculateEmploymentRate(response.data, 'IT'),
-                'Engineering': this.calculateEmploymentRate(response.data, 'engineering'),
-                'Healthcare': this.calculateEmploymentRate(response.data, 'healthcare'),
-                'Commerce': this.calculateEmploymentRate(response.data, 'commerce'),
-                'Education': this.calculateEmploymentRate(response.data, 'education'),
-                'Arts': this.calculateEmploymentRate(response.data, 'arts')
-            };
-        } catch (error) {
-            console.error('Error fetching employment stats:', error);
-            return this.getDefaultEmploymentRates();
-        }
-    }
-
-    async getJobPostingTrends() {
-        try {
-            const [careerJunctionData, pnetData, indeedData] = await Promise.all([
-                this.getCareerJunctionPostings(),
-                this.getPNetPostings(),
-                this.getIndeedPostings()
-            ]);
-
-            return this.aggregateJobPostings(careerJunctionData, pnetData, indeedData);
-        } catch (error) {
-            console.error('Error fetching job postings:', error);
-            return this.getDefaultJobTrends();
-        }
-    }
-
-    async getCareerJunctionPostings() {
-        const response = await axios.get(
-            `${API_CONFIG.CAREER_JUNCTION.baseURL}/jobs/search`,
-            {
-                headers: { 'Authorization': `Bearer ${API_CONFIG.CAREER_JUNCTION.apiKey}` },
-                params: {
-                    category: 'all',
-                    date_posted: '30',
-                    results_per_page: 1000
-                }
-            }
-        );
-        return response.data;
-    }
-
-    async getPNetPostings() {
-        const response = await axios.get(
-            `${API_CONFIG.PNET.baseURL}/jobads`,
-            {
-                headers: { 'Authorization': `Bearer ${API_CONFIG.PNET.apiKey}` },
-                params: {
-                    pageSize: 1000,
-                    days: 30
-                }
-            }
-        );
-        return response.data;
-    }
-
-    async getIndeedPostings() {
-        const response = await axios.get(
-            `${API_CONFIG.INDEED.baseURL}/ads/apisearch`,
-            {
-                params: {
-                    publisher: API_CONFIG.INDEED.publisherId,
-                    q: 'graduate',
-                    l: 'south africa',
-                    sort: 'date',
-                    radius: 25,
-                    st: 'jobsite',
-                    jt: 'fulltime',
-                    limit: 100,
-                    fromage: 30,
-                    format: 'json'
-                }
-            }
-        );
-        return response.data;
-    }
-
-    async getGraduateEmploymentOutcomes() {
-        try {
-            // SAGEA Graduate Recruitment Survey data
-            const response = await axios.get(
-                `${API_CONFIG.SAGEA.baseURL}/surveys/graduate-outcomes`,
-                { headers: { 'Authorization': `Bearer ${API_CONFIG.SAGEA.apiKey}` } }
-            );
-
-            return response.data;
-        } catch (error) {
-            console.error('Error fetching graduate outcomes:', error);
-            return this.getDefaultGraduateOutcomes();
-        }
-    }
-
-    async getHighDemandFields() {
-        try {
-            // DHET Critical Skills List
-            const response = await axios.get(
-                `${API_CONFIG.DHET.baseURL}/critical-skills`,
-                { headers: { 'Authorization': `Bearer ${API_CONFIG.DHET.apiKey}` } }
-            );
-
-            return response.data.skills.map(skill => skill.field);
-        } catch (error) {
-            console.error('Error fetching high demand fields:', error);
-            return [
-                'Information Technology',
-                'Healthcare',
-                'Engineering',
-                'Renewable Energy',
-                'Data Science',
-                'Digital Marketing',
-                'Financial Technology',
-                'Cybersecurity',
-                'Artificial Intelligence',
-                'Sustainable Development'
-            ];
-        }
-    }
-
-    async getScarceSkills() {
-        try {
-            // DHET Scarce Skills List
-            const response = await axios.get(
-                `${API_CONFIG.DHET.baseURL}/scarce-skills`,
-                { headers: { 'Authorization': `Bearer ${API_CONFIG.DHET.apiKey}` } }
-            );
-
-            return response.data.skills.map(skill => skill.name);
-        } catch (error) {
-            console.error('Error fetching scarce skills:', error);
-            return [
-                'Software Development',
-                'Data Analysis',
-                'Cloud Computing',
-                'Cybersecurity',
-                'Digital Marketing',
-                'Renewable Energy Engineering',
-                'Data Science',
-                'Artificial Intelligence',
-                'Blockchain Development',
-                'UX/UI Design'
-            ];
-        }
-    }
-
-    async getIndustryGrowthData() {
-        try {
-            const response = await axios.get(
-                `${API_CONFIG.STATS_SA.baseURL}/economy/industry-growth`,
-                { headers: { 'Authorization': `Bearer ${API_CONFIG.STATS_SA.apiKey}` } }
-            );
-
-            return response.data;
-        } catch (error) {
-            console.error('Error fetching industry growth:', error);
-            return this.getDefaultIndustryGrowth();
-        }
-    }
-
-    aggregateJobPostings(cjData, pnetData, indeedData) {
-        // Aggregate data from multiple job portals
-        const aggregated = {};
-
-        // Process CareerJunction data
-        if (cjData?.jobs) {
-            cjData.jobs.forEach(job => {
-                const field = this.categorizeJobField(job.category);
-                if (!aggregated[field]) aggregated[field] = { postings: 0, growth: 0 };
-                aggregated[field].postings += 1;
-            });
-        }
-
-        // Process PNet data
-        if (pnetData?.jobAds) {
-            pnetData.jobAds.forEach(job => {
-                const field = this.categorizeJobField(job.industry);
-                if (!aggregated[field]) aggregated[field] = { postings: 0, growth: 0 };
-                aggregated[field].postings += 1;
-            });
-        }
-
-        // Process Indeed data
-        if (indeedData?.results) {
-            indeedData.results.forEach(job => {
-                const field = this.categorizeJobField(job.jobtitle);
-                if (!aggregated[field]) aggregated[field] = { postings: 0, growth: 0 };
-                aggregated[field].postings += 1;
-            });
-        }
-
-        return aggregated;
-    }
-
-    categorizeJobField(jobCategory) {
-        const categories = {
-            'IT': 'Information Technology',
-            'Software': 'Information Technology',
-            'Developer': 'Information Technology',
-            'Engineering': 'Engineering',
-            'Medical': 'Healthcare',
-            'Nursing': 'Healthcare',
-            'Finance': 'Commerce',
-            'Accounting': 'Commerce',
-            'Teaching': 'Education',
-            'Marketing': 'Business'
-        };
-
-        for (const [key, value] of Object.entries(categories)) {
-            if (jobCategory?.toLowerCase().includes(key.toLowerCase())) {
-                return value;
-            }
-        }
-        return 'Other';
-    }
-
-    // Fallback methods when APIs are unavailable
-    getDefaultEmploymentRates() {
-        return {
-            'Information Technology': 92,
-            'Engineering': 88,
-            'Healthcare': 95,
-            'Commerce': 78,
-            'Education': 82,
-            'Arts': 65
-        };
-    }
-
-    getDefaultJobTrends() {
-        return {
-            'Information Technology': { postings: 1250, growth: 15 },
-            'Healthcare': { postings: 980, growth: 12 },
-            'Engineering': { postings: 750, growth: 8 },
-            'Commerce': { postings: 620, growth: 5 },
-            'Education': { postings: 450, growth: 3 }
-        };
-    }
-
-    getDefaultGraduateOutcomes() {
-        return {
-            employmentWithinSixMonths: 78,
-            averageStartingSalary: 285000,
-            furtherStudies: 15,
-            internshipParticipation: 22
-        };
-    }
-
-    getDefaultIndustryGrowth() {
-        return {
-            'Green Economy': 12.5,
-            'Digital Transformation': 18.2,
-            'E-commerce': 15.7,
-            'Healthcare Technology': 14.3,
-            'Fintech': 16.8,
-            'Renewable Energy': 22.1
-        };
-    }
-
-    getFallbackMarketData() {
-        return {
-            highDemandFields: this.getHighDemandFields(),
-            growingSectors: ['Green Economy', 'Digital Transformation', 'Healthcare Technology'],
-            scarceSkills: this.getScarceSkills(),
-            employmentRates: this.getDefaultEmploymentRates(),
-            jobPostingTrends: this.getDefaultJobTrends(),
-            graduateOutcomes: this.getDefaultGraduateOutcomes(),
-            industryGrowth: this.getDefaultIndustryGrowth(),
-            lastUpdated: new Date().toISOString(),
-            source: 'fallback'
-        };
-    }
-}
-
-// Enhanced institution data with real-time availability
-class InstitutionDataService {
-    constructor() {
-        this.cache = new NodeCache({ stdTTL: 86400 }); // 24 hour cache
-    }
-
-    async getInstitutionCourses(requirements) {
-        const cacheKey = `institutions_${JSON.stringify(requirements)}`;
-        const cached = this.cache.get(cacheKey);
-        if (cached) return cached;
-
-        try {
-            // DHET registered institutions and programs
-            const response = await axios.get(
-                `${API_CONFIG.DHET.baseURL}/institutions/programs`,
-                {
-                    headers: { 'Authorization': `Bearer ${API_CONFIG.DHET.apiKey}` },
-                    params: {
-                        min_aps: requirements.apsScore,
-                        required_subjects: requirements.requiredSubjects.join(','),
-                        field: requirements.field
-                    }
-                }
-            );
-
-            const institutions = this.processInstitutionData(response.data, requirements);
-            this.cache.set(cacheKey, institutions);
-            return institutions;
-
-        } catch (error) {
-            console.error('Error fetching institution data:', error);
-            return this.getFallbackInstitutions(requirements);
-        }
-    }
-
-    processInstitutionData(apiData, requirements) {
-        return apiData.programs.map(program => ({
-            name: program.institution_name,
-            program: program.program_name,
-            requirements: program.admission_requirements,
-            applicationDeadline: program.application_deadline,
-            estimatedCost: program.tuition_fees,
-            employmentRate: program.employment_rate,
-            duration: program.duration,
-            campus: program.campus_location,
-            accreditation: program.accreditation_status,
-            notes: this.generateInstitutionNotes(program),
-            availability: this.checkAvailability(program),
-            nsfasFunding: program.nsfas_accredited
-        }));
-    }
-
-    async checkAvailability(program) {
-        try {
-            const response = await axios.get(
-                `${API_CONFIG.DHET.baseURL}/programs/${program.id}/availability`
-            );
-            return response.data.available_spaces > 0 ? 'Available' : 'Limited';
-        } catch (error) {
-            return 'Check Institution Website';
-        }
-    }
-
-    getFallbackInstitutions(requirements) {
-        // Comprehensive fallback data for South African institutions
-        const institutions = [];
-        
-        if (requirements.field === 'Medicine') {
-            institutions.push(...this.getMedicalInstitutions(requirements));
-        } else if (requirements.field === 'Engineering') {
-            institutions.push(...this.getEngineeringInstitutions(requirements));
-        } else if (requirements.field === 'IT') {
-            institutions.push(...this.getITInstitutions(requirements));
-        }
-
-        return institutions;
-    }
-
-    getMedicalInstitutions(requirements) {
-        return [
-            {
-                name: "University of Cape Town (UCT)",
-                program: "MBChB Medicine",
-                requirements: "APS 42+, Physical Science 80%+, Life Science 80%+, Mathematics 70%+",
-                applicationDeadline: "30 June 2024",
-                estimatedCost: "R75,000 - R120,000 per year",
-                employmentRate: 98,
-                duration: "6 years",
-                campus: "Health Sciences Campus, Observatory",
-                accreditation: "HPCSA, WHO",
-                notes: "National Benchmark Test (NBT) required. Highly competitive with limited spaces.",
-                availability: "Limited",
-                nsfasFunding: true
-            }
-        ];
-    }
-
-    getEngineeringInstitutions(requirements) {
-        return [
-            {
-                name: "University of Pretoria",
-                program: "BEng Electrical Engineering",
-                requirements: "APS 38+, Mathematics 75%+, Physical Science 70%+",
-                applicationDeadline: "30 September 2024",
-                estimatedCost: "R55,000 - R85,000 per year",
-                employmentRate: 92,
-                duration: "4 years",
-                campus: "Engineering Building, Hatfield",
-                accreditation: "ECSA, Washington Accord",
-                notes: "Largest engineering faculty in South Africa. Strong industry partnerships.",
-                availability: "Available",
-                nsfasFunding: true
-            }
-        ];
-    }
-
-    getITInstitutions(requirements) {
-        return [
-            {
-                name: "University of Johannesburg",
-                program: "BSc Computer Science",
-                requirements: "APS 34+, Mathematics 65%+",
-                applicationDeadline: "30 September 2024",
-                estimatedCost: "R35,000 - R55,000 per year",
-                employmentRate: 91,
-                duration: "3 years",
-                campus: "Auckland Park Kingsway",
-                accreditation: "CHE, SAQA",
-                notes: "Industry-aligned curriculum with internship opportunities.",
-                availability: "Available",
-                nsfasFunding: true
-            }
-        ];
-    }
-}
-
-// Enhanced recommendation engine with real-time data
-class EnhancedRecommendationEngine {
-    constructor() {
-        this.marketDataService = new RealTimeMarketDataService();
-        this.institutionService = new InstitutionDataService();
-    }
-
-    async generateRealTimeRecommendations(apsScore, subjects, studentInterests = []) {
-        const [marketTrends, subjectAnalysis] = await Promise.all([
-            this.marketDataService.getCurrentMarketTrends(),
-            this.analyzeSubjectStrengths(subjects)
-        ]);
-
-        const interests = studentInterests.length > 0 ? 
-            studentInterests : this.inferInterestsFromSubjects(subjects);
-
-        // Get course recommendations based on multiple factors
-        const courses = await this.getCourseRecommendations(
-            apsScore, subjectAnalysis, interests, marketTrends
-        );
-
-        // Generate skills based on real market needs
-        const skills = await this.generateMarketAlignedSkills(courses, subjectAnalysis, marketTrends);
-
-        return {
-            courses,
-            skills,
-            marketInsights: marketTrends,
-            recommendationSummary: this.generateSummary(apsScore, courses, marketTrends)
-        };
-    }
-
-    async getCourseRecommendations(apsScore, subjectAnalysis, interests, marketTrends) {
-        const recommendations = [];
-
-        // Get institution-specific course data
-        const courseRequirements = {
-            apsScore,
-            requiredSubjects: this.getRequiredSubjects(subjectAnalysis),
-            field: this.determineBestField(subjectAnalysis, interests, marketTrends)
-        };
-
-        const institutions = await this.institutionService.getInstitutionCourses(courseRequirements);
-
-        // Filter and rank institutions based on multiple factors
-        const rankedInstitutions = this.rankInstitutions(
-            institutions, marketTrends, subjectAnalysis
-        );
-
-        return rankedInstitutions.slice(0, 5); // Return top 5 recommendations
-    }
-
-    rankInstitutions(institutions, marketTrends, subjectAnalysis) {
-        return institutions.map(institution => {
-            let score = 0;
-
-            // Employment rate weighting (40%)
-            score += (institution.employmentRate / 100) * 40;
-
-            // Market demand weighting (30%)
-            const fieldDemand = marketTrends.employmentRates[institution.field] || 50;
-            score += (fieldDemand / 100) * 30;
-
-            // Subject alignment weighting (20%)
-            const subjectAlignment = this.calculateSubjectAlignment(institution, subjectAnalysis);
-            score += subjectAlignment * 20;
-
-            // Cost factor weighting (10%)
-            const costScore = this.calculateCostScore(institution.estimatedCost);
-            score += costScore * 10;
-
-            return {
-                ...institution,
-                recommendationScore: Math.round(score),
-                ranking: this.getRankingCategory(score)
-            };
-        }).sort((a, b) => b.recommendationScore - a.recommendationScore);
-    }
-
-    calculateSubjectAlignment(institution, subjectAnalysis) {
-        // Calculate how well student's subjects align with program requirements
-        let alignmentScore = 0;
-        const requiredSubjects = this.parseRequirements(institution.requirements);
-
-        requiredSubjects.forEach(subject => {
-            if (subjectAnalysis[subject.field]?.score >= subject.minScore) {
-                alignmentScore += 20; // Max 20 points per required subject
-            }
-        });
-
-        return Math.min(alignmentScore, 100);
-    }
-
-    calculateCostScore(estimatedCost) {
-        // Convert cost string to number (e.g., "R50,000 - R75,000" -> 62500)
-        const avgCost = this.extractAverageCost(estimatedCost);
-        
-        if (avgCost < 30000) return 10;
-        if (avgCost < 50000) return 8;
-        if (avgCost < 75000) return 6;
-        if (avgCost < 100000) return 4;
-        return 2;
-    }
-
-    extractAverageCost(costString) {
-        const numbers = costString.match(/\d+/g);
-        if (!numbers) return 50000; // Default average
-        
-        const nums = numbers.map(n => parseInt(n)).filter(n => n > 1000);
-        if (nums.length === 0) return 50000;
-        
-        return nums.reduce((a, b) => a + b, 0) / nums.length;
-    }
-
-    getRankingCategory(score) {
-        if (score >= 85) return 'Highly Recommended';
-        if (score >= 70) return 'Recommended';
-        if (score >= 60) return 'Good Option';
-        return 'Consider';
-    }
-}
-
-// Update the main route to use real-time services
+// Upload results and calculate APS with OCR
 router.post('/upload-results', upload.single('resultsFile'), async (req, res) => {
     try {
         if (!req.file) {
@@ -646,32 +60,31 @@ router.post('/upload-results', upload.single('resultsFile'), async (req, res) =>
         // Calculate APS
         const apsResult = calculateAPSBreakdown(ocrResult.subjects);
         
-        // Generate real-time recommendations
-        const recommendationEngine = new EnhancedRecommendationEngine();
-        const { courses, skills, marketInsights } = await recommendationEngine.generateRealTimeRecommendations(
-            apsResult.totalPoints, ocrResult.subjects, interests
-        );
+        // Generate course recommendations
+        const recommendedCourses = await generateCourseRecommendations(apsResult.totalPoints, ocrResult.subjects, interests);
+        
+        // Generate skill recommendations
+        const recommendedSkills = await generateSkillRecommendations(apsResult.totalPoints, ocrResult.subjects);
 
-        // Prepare response with real-time data
+        // Calculate performance analysis
+        const performanceAnalysis = analyzeGrade11_12Performance(ocrResult.subjects, ocrResult.overallAverage);
+
+        // Prepare response
         const response = {
             success: true,
-            message: 'Grade 11-12 results processed successfully with real-time market data!',
+            message: 'Grade 11-12 results processed successfully!',
             apsScore: apsResult.totalPoints,
             apsBreakdown: apsResult,
+            performanceAnalysis,
             subjects: ocrResult.subjects,
             overallAverage: ocrResult.overallAverage,
-            courses,
-            skills,
-            marketInsights: {
-                highDemandFields: marketInsights.highDemandFields,
-                employmentRates: marketInsights.employmentRates,
-                lastUpdated: marketInsights.lastUpdated
-            },
-            summary: generateSummary(apsResult.totalPoints, ocrResult.subjects, ocrResult.overallAverage)
+            courses: recommendedCourses,
+            skills: recommendedSkills,
+            summary: generateGrade11_12Summary(ocrResult.subjects, ocrResult.overallAverage, apsResult.totalPoints, recommendedCourses)
         };
 
         // Save to database
-        await saveToDatabase(studentId, name, email, grade, ocrResult, apsResult, courses, skills, req.file.path);
+        await saveToDatabase(studentId, name, email, grade, ocrResult, apsResult, recommendedCourses, recommendedSkills, req.file.path);
 
         res.json(response);
 
@@ -684,12 +97,460 @@ router.post('/upload-results', upload.single('resultsFile'), async (req, res) =>
     }
 });
 
-// Environment variables needed:
-// DHET_API_KEY=your_dhet_api_key_here
-// SAGEA_API_KEY=your_sagea_api_key_here
-// CAREER_JUNCTION_API_KEY=your_cj_api_key_here
-// PNET_API_KEY=your_pnet_api_key_here
-// INDEED_PUBLISHER_ID=your_indeed_publisher_id
-// STATSSA_API_KEY=your_stats_sa_api_key
+// Manual results submission
+router.post('/manual-results', async (req, res) => {
+    try {
+        const { studentId, name, email, grade, subjects, overallAverage, interests = [] } = req.body;
+
+        console.log('Grade 11-12 manual results submission');
+
+        // Validate subjects
+        if (!subjects || !Array.isArray(subjects) || subjects.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'No subjects provided'
+            });
+        }
+
+        // Calculate APS
+        const apsScore = calculateAPS(subjects);
+        const calculatedAverage = calculateAverage(subjects);
+        const apsBreakdown = calculateAPSBreakdown(subjects);
+
+        // Generate course recommendations
+        const recommendedCourses = await generateCourseRecommendations(apsScore, subjects, interests);
+        
+        // Generate skill recommendations
+        const recommendedSkills = await generateSkillRecommendations(apsScore, subjects);
+
+        // Calculate performance analysis
+        const performanceAnalysis = analyzeGrade11_12Performance(subjects, overallAverage || calculatedAverage);
+
+        // Prepare response
+        const response = {
+            success: true,
+            message: 'Grade 11-12 manual results processed successfully!',
+            apsScore,
+            apsBreakdown,
+            performanceAnalysis,
+            subjects,
+            overallAverage: overallAverage || calculatedAverage,
+            courses: recommendedCourses,
+            skills: recommendedSkills,
+            summary: generateGrade11_12Summary(subjects, overallAverage || calculatedAverage, apsScore, recommendedCourses)
+        };
+
+        // Save to database
+        await saveToDatabase(studentId, name, email, grade, 
+            { subjects, overallAverage: overallAverage || calculatedAverage }, 
+            { totalPoints: apsScore, breakdown: apsBreakdown }, 
+            recommendedCourses, 
+            recommendedSkills, 
+            'manual_upload'
+        );
+
+        res.json(response);
+
+    } catch (error) {
+        console.error('Error in grade11-12 manual results submission:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// APS calculation function
+function calculateAPS(subjects) {
+    let totalPoints = 0;
+    subjects.forEach(subject => {
+        const mark = subject.mark;
+        if (mark >= 80) totalPoints += 7;
+        else if (mark >= 70) totalPoints += 6;
+        else if (mark >= 60) totalPoints += 5;
+        else if (mark >= 50) totalPoints += 4;
+        else if (mark >= 40) totalPoints += 3;
+        else if (mark >= 30) totalPoints += 2;
+        else totalPoints += 1;
+    });
+    return totalPoints;
+}
+
+// Calculate APS with detailed breakdown
+function calculateAPSBreakdown(subjects) {
+    let totalPoints = 0;
+    const breakdown = [];
+
+    subjects.forEach(subject => {
+        const mark = subject.mark;
+        let points = 0;
+        let level = '';
+
+        if (mark >= 80) {
+            points = 7;
+            level = 'Distinction';
+        } else if (mark >= 70) {
+            points = 6;
+            level = 'Merit';
+        } else if (mark >= 60) {
+            points = 5;
+            level = 'Achieved';
+        } else if (mark >= 50) {
+            points = 4;
+            level = 'Satisfactory';
+        } else if (mark >= 40) {
+            points = 3;
+            level = 'Elementary';
+        } else if (mark >= 30) {
+            points = 2;
+            level = 'Not Achieved';
+        } else {
+            points = 1;
+            level = 'Fail';
+        }
+
+        totalPoints += points;
+
+        breakdown.push({
+            subject: subject.name,
+            mark: mark,
+            level: level,
+            points: points,
+            symbol: getSymbol(level)
+        });
+    });
+
+    return {
+        totalPoints: totalPoints,
+        averagePoints: subjects.length > 0 ? (totalPoints / subjects.length).toFixed(2) : 0,
+        subjectCount: subjects.length,
+        breakdown: breakdown
+    };
+}
+
+function getSymbol(level) {
+    const symbols = {
+        'Distinction': '⭐',
+        'Merit': '✅',
+        'Achieved': '👍',
+        'Satisfactory': '➖',
+        'Elementary': '⚠️',
+        'Not Achieved': '❌',
+        'Fail': '💀'
+    };
+    return symbols[level] || '❓';
+}
+
+// Calculate average
+function calculateAverage(subjects) {
+    const total = subjects.reduce((sum, subject) => sum + subject.mark, 0);
+    return subjects.length > 0 ? Math.round(total / subjects.length) : 0;
+}
+
+// Analyze Grade 11-12 performance
+function analyzeGrade11_12Performance(subjects, overallAverage) {
+    const strongSubjects = subjects.filter(s => s.mark >= 70);
+    const averageSubjects = subjects.filter(s => s.mark >= 50 && s.mark < 70);
+    const weakSubjects = subjects.filter(s => s.mark < 50);
+
+    return {
+        strongSubjects: {
+            list: strongSubjects,
+            count: strongSubjects.length
+        },
+        averageSubjects: {
+            list: averageSubjects,
+            count: averageSubjects.length
+        },
+        weakSubjects: {
+            list: weakSubjects,
+            count: weakSubjects.length
+        },
+        universityProspects: getUniversityProspects(overallAverage)
+    };
+}
+
+function getUniversityProspects(average) {
+    if (average >= 80) return 'Excellent - All universities accessible';
+    if (average >= 70) return 'Very Good - Most universities accessible';
+    if (average >= 60) return 'Good - Universities of Technology accessible';
+    if (average >= 50) return 'Fair - TVET colleges and some diplomas';
+    return 'Needs Improvement - Focus on skills development';
+}
+
+// Generate course recommendations
+async function generateCourseRecommendations(apsScore, subjects, interests = []) {
+    let courses = [];
+
+    // Based on APS score and interests
+    if (apsScore >= 35) {
+        courses = [
+            {
+                name: "Medicine & Surgery",
+                category: "Health Sciences",
+                description: "Become a medical doctor with specialization options in various fields.",
+                institutions: ["University of Cape Town", "Wits University", "Stellenbosch University"],
+                requirements: "Maths & Physical Science (80%+), Life Sciences (75%+)",
+                jobProspects: "Excellent",
+                duration: "6 years"
+            },
+            {
+                name: "Computer Science & Engineering",
+                category: "Engineering & IT",
+                description: "Combine software development with hardware engineering principles.",
+                institutions: ["University of Pretoria", "UCT", "Wits"],
+                requirements: "Maths & Physical Science (75%+)",
+                jobProspects: "Excellent",
+                duration: "4 years"
+            }
+        ];
+    } else if (apsScore >= 28) {
+        courses = [
+            {
+                name: "BCom Accounting",
+                category: "Commerce",
+                description: "Professional accounting qualification with CA(SA) potential.",
+                institutions: ["University of Johannesburg", "Nelson Mandela University", "Rhodes University"],
+                requirements: "Maths (60%+)",
+                jobProspects: "Very Good",
+                duration: "3-4 years"
+            },
+            {
+                name: "BSc Information Technology",
+                category: "IT",
+                description: "Software development, networking, and IT management.",
+                institutions: ["TUT", "DUT", "Varsity College"],
+                requirements: "Maths (60%+)",
+                jobProspects: "Very Good",
+                duration: "3 years"
+            }
+        ];
+    } else if (apsScore >= 24) {
+        courses = [
+            {
+                name: "Diploma in Marketing",
+                category: "Business",
+                description: "Digital marketing, brand management, and sales.",
+                institutions: ["Vega School", "Boston City Campus", "Damelin"],
+                requirements: "English (50%+)",
+                jobProspects: "Good",
+                duration: "3 years"
+            },
+            {
+                name: "Diploma in Tourism",
+                category: "Tourism",
+                description: "Tour operations, hospitality, and travel management.",
+                institutions: ["CATHSSETA", "Tourism College", "Various FET Colleges"],
+                requirements: "English (50%+)",
+                jobProspects: "Good",
+                duration: "3 years"
+            }
+        ];
+    } else {
+        courses = [
+            {
+                name: "Vocational Skills Program",
+                category: "Skills Development",
+                description: "Hands-on training in trades like plumbing, electrical, or automotive.",
+                institutions: ["TVET Colleges", "SETAs", "Private Colleges"],
+                requirements: "NSC Pass",
+                jobProspects: "Stable",
+                duration: "1-2 years"
+            },
+            {
+                name: "Entrepreneurship Program",
+                category: "Business",
+                description: "Start your own business with government support programs.",
+                institutions: ["SEDA", "NYDA", "Business Incubators"],
+                requirements: "NSC Pass",
+                jobProspects: "Variable",
+                duration: "6-12 months"
+            }
+        ];
+    }
+
+    // Filter by interests if provided
+    if (interests.length > 0) {
+        courses = courses.filter(course => 
+            interests.some(interest => 
+                course.category.toLowerCase().includes(interest.toLowerCase()) ||
+                course.name.toLowerCase().includes(interest.toLowerCase())
+            )
+        );
+    }
+
+    return courses;
+}
+
+// Generate skill recommendations
+async function generateSkillRecommendations(apsScore, subjects) {
+    let skills = [];
+
+    if (apsScore >= 30) {
+        skills = [
+            {
+                name: "Critical Thinking",
+                description: "Analytical problem-solving and decision-making abilities.",
+                category: "Cognitive",
+                demandLevel: "Very High"
+            },
+            {
+                name: "Data Analysis",
+                description: "Interpreting data and making evidence-based decisions.",
+                category: "Technical",
+                demandLevel: "High"
+            },
+            {
+                name: "Project Management",
+                description: "Organizing tasks and managing timelines effectively.",
+                category: "Management",
+                demandLevel: "High"
+            }
+        ];
+    } else if (apsScore >= 25) {
+        skills = [
+            {
+                name: "Communication Skills",
+                description: "Verbal and written communication for professional environments.",
+                category: "Soft Skills",
+                demandLevel: "High"
+            },
+            {
+                name: "Digital Literacy",
+                description: "Essential computer skills including MS Office and basic software.",
+                category: "Technical",
+                demandLevel: "High"
+            },
+            {
+                name: "Customer Service",
+                description: "Professional client interaction and relationship building.",
+                category: "Soft Skills",
+                demandLevel: "Medium"
+            }
+        ];
+    } else {
+        skills = [
+            {
+                name: "Time Management",
+                description: "Prioritizing tasks and meeting deadlines consistently.",
+                category: "Soft Skills",
+                demandLevel: "Medium"
+            },
+            {
+                name: "Basic Financial Literacy",
+                description: "Budgeting, saving, and understanding personal finance.",
+                category: "Life Skills",
+                demandLevel: "Medium"
+            },
+            {
+                name: "Teamwork",
+                description: "Collaborating effectively with others in group settings.",
+                category: "Soft Skills",
+                demandLevel: "Medium"
+            }
+        ];
+    }
+
+    return skills;
+}
+
+// Generate Grade 11-12 summary
+function generateGrade11_12Summary(subjects, overallAverage, apsScore, courses) {
+    const performanceLevel = getGrade11_12PerformanceLevel(overallAverage);
+    const totalSubjects = subjects.length;
+    const strongCount = subjects.filter(s => s.mark >= 70).length;
+
+    return {
+        apsScore,
+        overallAverage,
+        performanceLevel: performanceLevel.level,
+        performanceEmoji: performanceLevel.emoji,
+        totalSubjects,
+        strongSubjects: strongCount,
+        availableCourses: courses.length,
+        keyMessage: `Your APS score is ${apsScore}. ${performanceLevel.message}`,
+        nextSteps: [
+            "Research recommended courses",
+            "Check university application deadlines",
+            "Prepare required documents",
+            "Consider backup options"
+        ]
+    };
+}
+
+function getGrade11_12PerformanceLevel(average) {
+    if (average >= 80) return {
+        level: 'Outstanding',
+        emoji: '⭐',
+        message: 'Exceptional performance! Excellent university prospects.'
+    };
+    if (average >= 70) return {
+        level: 'Excellent',
+        emoji: '👍',
+        message: 'Great work! Very good university options available.'
+    };
+    if (average >= 60) return {
+        level: 'Good',
+        emoji: '✅',
+        message: 'Good performance! Solid diploma and degree options.'
+    };
+    if (average >= 50) return {
+        level: 'Satisfactory',
+        emoji: '➖',
+        message: 'Satisfactory performance. Consider various pathways.'
+    };
+    return {
+        level: 'Needs Improvement',
+        emoji: '📚',
+        message: 'Focus on improvement and skills development.'
+    };
+}
+
+// Database saving function
+async function saveToDatabase(studentId, name, email, grade, ocrResult, apsResult, recommendedCourses, recommendedSkills, filePath) {
+    try {
+        // Save or update student
+        let student = await Student.findOne({ studentId });
+        if (!student) {
+            student = new Student({
+                studentId,
+                name,
+                grade: grade,
+                contact: { email }
+            });
+            await student.save();
+        }
+
+        // Save results
+        const results = new Results({
+            studentId,
+            grade: grade,
+            subjects: ocrResult.subjects,
+            overallAverage: ocrResult.overallAverage,
+            apsScore: apsResult.totalPoints,
+            fileUrl: filePath
+        });
+        await results.save();
+
+        // Save recommendations
+        const recommendations = new Recommendations({
+            studentId,
+            grade: grade,
+            recommendedCourses,
+            recommendedSkills
+        });
+        await recommendations.save();
+
+        console.log('✅ Grade 11-12 data saved successfully for student:', studentId);
+    } catch (error) {
+        console.error('❌ Error saving Grade 11-12 data to database:', error);
+    }
+}
+
+// Health check endpoint
+router.get('/health', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Grade 11-12 API is running',
+        timestamp: new Date().toISOString()
+    });
+});
 
 module.exports = router;

@@ -3,111 +3,752 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grade 9 - College Path Selection</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Skills Analyzer</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        
+        .upload-section {
+            flex: 1;
+            min-width: 300px;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+        
+        .result-section {
+            flex: 1;
+            min-width: 300px;
+            padding: 30px;
+            background: white;
+            border-left: 1px solid #eee;
+        }
+        
+        .upload-area {
+            border: 2px dashed #6a11cb;
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(106, 17, 203, 0.05);
+            margin-bottom: 20px;
+        }
+        
+        .upload-area:hover {
+            background: rgba(106, 17, 203, 0.1);
+            border-color: #2575fc;
+        }
+        
+        .upload-area i {
+            font-size: 48px;
+            color: #6a11cb;
+            margin-bottom: 15px;
+        }
+        
+        .upload-area h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .upload-area p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            background: #6a11cb;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            background: #2575fc;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .preview-container {
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .preview-title {
+            margin-bottom: 15px;
+            color: #333;
+            text-align: left;
+        }
+        
+        .image-preview {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .progress-container {
+            margin: 20px 0;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            height: 10px;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #6a11cb, #2575fc);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .status {
+            text-align: center;
+            margin: 15px 0;
+            font-weight: 500;
+            color: #6a11cb;
+        }
+        
+        .result-title {
+            margin-bottom: 15px;
+            color: #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .text-result {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 300px;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+        
+        .skills-container {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 300px;
+            max-height: 500px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        
+        .skill-category {
+            margin-bottom: 20px;
+        }
+        
+        .skill-category h3 {
+            color: #6a11cb;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .skill-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .skill-tag {
+            background: #e9ecef;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: #495057;
+        }
+        
+        .skill-tag.high-demand {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .skill-tag.medium-demand {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn-success {
+            background: #28a745;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+        }
+        
+        .supported-formats {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #666;
+            text-align: center;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+        
+        .tab.active {
+            border-bottom: 2px solid #6a11cb;
+            color: #6a11cb;
+            font-weight: 600;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            .result-section {
+                border-left: none;
+                border-top: 1px solid #eee;
+            }
+        }
+    </style>
 </head>
 <body>
-    <header>
-        <h1>Grade 9 - College Path Selection</h1>
-        <p>Upload your results and discover your career path</p>
-    </header>
-    
-    <main>
-        <div class="container">
-            <div class="back-button">
-                <a href="index.html">&larr; Back to Home</a>
+    <div class="container">
+        <header>
+            <h1>Skills Analyzer</h1>
+            <p class="subtitle">Upload resumes or job descriptions to identify in-demand skills</p>
+        </header>
+        
+        <div class="app-container">
+            <div class="upload-section">
+                <h2>Upload File</h2>
+                <div class="upload-area" id="dropArea">
+                    <i>📁</i>
+                    <h3>Drag & Drop Files Here</h3>
+                    <p>or</p>
+                    <button class="btn" id="browseBtn">Browse Files</button>
+                    <input type="file" id="fileInput" class="file-input" accept=".jpg,.jpeg,.png,.gif,.pdf">
+                </div>
+                
+                <div class="preview-container">
+                    <h3 class="preview-title">Preview</h3>
+                    <div id="imagePreview"></div>
+                </div>
+                
+                <div class="progress-container">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                
+                <div class="status" id="status">Ready to scan</div>
+                
+                <button class="btn" id="scanBtn" disabled>
+                    <span>Analyze Skills</span>
+                </button>
+                
+                <div class="supported-formats">
+                    <p>Supported formats: JPG, PNG, GIF, PDF</p>
+                </div>
             </div>
             
-            <div class="steps">
-                <div class="step active" id="step1">
-                    <h2>Step 1: Upload Your Grade 9 Results</h2>
-                    <div class="upload-area" id="uploadArea">
-                        <p>Drag & drop your results file here or</p>
-                        <input type="file" id="resultsFile" accept=".pdf,.jpg,.jpeg,.png">
-                        <label for="resultsFile" class="btn">Choose File</label>
-                        <p class="file-info">Supported formats: PDF, JPG, PNG</p>
-                    </div>
-                    <button class="btn next-btn" id="step1Next" disabled>Next</button>
-                </div>
-                
-                <div class="step" id="step2">
-                    <h2>Step 2: Add Your Current Skills</h2>
-                    <div class="skills-input">
-                        <p class="instruction">Select at least 2 skills from the dropdown:</p>
-                        <div class="input-group">
-                            <select id="skillSelect" class="skill-select">
-                                <option value="">-- Select a skill --</option>
-                                <option value="Digital Literacy">Digital Literacy</option>
-                                <option value="Problem Solving">Problem Solving</option>
-                                <option value="Communication Skills">Communication Skills</option>
-                                <option value="Python Programming">Python Programming</option>
-                                <option value="Data Literacy">Data Literacy</option>
-                                <option value="Critical Thinking">Critical Thinking</option>
-                                <option value="Design Thinking">Design Thinking</option>
-                                <option value="English Proficiency">English Proficiency</option>
-                                <option value="Collaboration">Collaboration</option>
-                                <option value="Spreadsheets">Spreadsheets (Excel/Google Sheets)</option>
-                                <option value="Leadership">Leadership</option>
-                                <option value="Time Management">Time Management</option>
-                                <option value="Research Skills">Research Skills</option>
-                                <option value="Public Speaking">Public Speaking</option>
-                                <option value="Creative Writing">Creative Writing</option>
-                            </select>
-                            <button class="btn" id="addSkillBtn">Add Skill</button>
-                        </div>
-                        <div id="skillsList" class="skills-list"></div>
-                        <p class="skill-counter" id="skillCounter">Skills selected: <strong>0</strong> (minimum 2 required)</p>
-                    </div>
-                    <div class="btn-group">
-                        <button class="btn prev-btn" id="step2Prev">Previous</button>
-                        <button class="btn next-btn" id="step2Next" disabled>Next</button>
+            <div class="result-section">
+                <div class="result-title">
+                    <h2>Skills Analysis</h2>
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary" id="copyBtn" disabled>Copy Skills</button>
+                        <button class="btn btn-success" id="downloadBtn" disabled>Download Report</button>
                     </div>
                 </div>
                 
-                <div class="step" id="step3">
-                    <h2>Step 3: Skills Recommendations</h2>
-                    <div class="recommendations">
-                        <h3>Based on your results and current skills, we recommend developing these in-demand skills:</h3>
-                        <div id="skillRecommendations" class="recommendations-list"></div>
-                        <div class="post-skill-entry">
-                            <h4>Want to add more skills?</h4>
-                            <div class="input-group">
-                                <select id="postSkillSelect" class="skill-select">
-                                    <option value="">-- Select a skill --</option>
-                                    <option value="Digital Literacy">Digital Literacy</option>
-                                    <option value="Problem Solving">Problem Solving</option>
-                                    <option value="Communication Skills">Communication Skills</option>
-                                    <option value="Python Programming">Python Programming</option>
-                                    <option value="Data Literacy">Data Literacy</option>
-                                    <option value="Critical Thinking">Critical Thinking</option>
-                                    <option value="Design Thinking">Design Thinking</option>
-                                    <option value="English Proficiency">English Proficiency</option>
-                                    <option value="Collaboration">Collaboration</option>
-                                    <option value="Spreadsheets">Spreadsheets (Excel/Google Sheets)</option>
-                                    <option value="Leadership">Leadership</option>
-                                    <option value="Time Management">Time Management</option>
-                                    <option value="Research Skills">Research Skills</option>
-                                    <option value="Public Speaking">Public Speaking</option>
-                                    <option value="Creative Writing">Creative Writing</option>
-                                </select>
-                                <button class="btn" id="postAddSkillBtn">Add & Save</button>
-                            </div>
-                            <p class="small">You can add skills after analysis and refresh recommendations based on market demand.</p>
-                        </div>
+                <div class="tabs">
+                    <div class="tab active" data-tab="skills">Skills</div>
+                    <div class="tab" data-tab="text">Raw Text</div>
+                </div>
+                
+                <div class="tab-content active" id="skills-tab">
+                    <div class="skills-container" id="skillsResult">
+                        <p>Skills analysis will appear here...</p>
                     </div>
-                    <div class="btn-group">
-                        <button class="btn prev-btn" id="step3Prev">Previous</button>
-                        <button class="btn" id="step3Finish">Finish</button>
+                </div>
+                
+                <div class="tab-content" id="text-tab">
+                    <div class="text-result" id="textResult">
+                        Extracted text will appear here...
                     </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn" id="clearBtn">Clear All</button>
                 </div>
             </div>
         </div>
-    </main>
-    
-    <footer>
-        <p>&copy; 2023 Student Career Guidance Portal. All rights reserved.</p>
-    </footer>
-    
-    <script src="script.js"></script>
+    </div>
+
+    <script>
+        // DOM Elements
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('fileInput');
+        const browseBtn = document.getElementById('browseBtn');
+        const scanBtn = document.getElementById('scanBtn');
+        const imagePreview = document.getElementById('imagePreview');
+        const progressBar = document.getElementById('progressBar');
+        const status = document.getElementById('status');
+        const textResult = document.getElementById('textResult');
+        const skillsResult = document.getElementById('skillsResult');
+        const copyBtn = document.getElementById('copyBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        // Variables
+        let currentFile = null;
+        let extractedText = '';
+        let skillsData = {};
+        
+        // Event Listeners
+        browseBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', handleFileSelect);
+        scanBtn.addEventListener('click', processOCR);
+        copyBtn.addEventListener('click', copySkills);
+        downloadBtn.addEventListener('click', downloadReport);
+        clearBtn.addEventListener('click', clearAll);
+        
+        // Tab switching
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.getAttribute('data-tab');
+                
+                // Update active tab
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // Show corresponding content
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                    if (content.id === `${tabId}-tab`) {
+                        content.classList.add('active');
+                    }
+                });
+            });
+        });
+        
+        // Drag and Drop Events
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            dropArea.style.borderColor = '#2575fc';
+            dropArea.style.backgroundColor = 'rgba(37, 117, 252, 0.1)';
+        }
+        
+        function unhighlight() {
+            dropArea.style.borderColor = '#6a11cb';
+            dropArea.style.backgroundColor = 'rgba(106, 17, 203, 0.05)';
+        }
+        
+        dropArea.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length) {
+                handleFiles(files);
+            }
+        }
+        
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            handleFiles(files);
+        }
+        
+        function handleFiles(files) {
+            if (files.length === 0) return;
+            
+            const file = files[0];
+            const fileType = file.type;
+            
+            // Check if file is supported
+            if (!fileType.match('image.*') && fileType !== 'application/pdf') {
+                status.textContent = 'Unsupported file type. Please upload an image or PDF.';
+                return;
+            }
+            
+            currentFile = file;
+            scanBtn.disabled = false;
+            status.textContent = 'File selected: ' + file.name;
+            
+            // Display preview for images
+            if (fileType.match('image.*')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.innerHTML = `<img src="${e.target.result}" class="image-preview" alt="Preview">`;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                // For PDFs, we'll just show a placeholder
+                imagePreview.innerHTML = `
+                    <div style="padding: 40px; text-align: center; background: #f0f0f0; border-radius: 8px;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">📄</div>
+                        <h3>PDF Document</h3>
+                        <p>${file.name}</p>
+                    </div>
+                `;
+            }
+            
+            // Reset previous results
+            textResult.textContent = 'Extracted text will appear here...';
+            skillsResult.innerHTML = '<p>Skills analysis will appear here...</p>';
+            copyBtn.disabled = true;
+            downloadBtn.disabled = true;
+            progressBar.style.width = '0%';
+        }
+        
+        async function processOCR() {
+            if (!currentFile) return;
+            
+            scanBtn.disabled = true;
+            scanBtn.innerHTML = '<div class="loading"></div> Processing...';
+            progressBar.style.width = '0%';
+            status.textContent = 'Initializing OCR engine...';
+            
+            try {
+                // For PDF files, we need to convert to image first
+                if (currentFile.type === 'application/pdf') {
+                    status.textContent = 'Converting PDF to image...';
+                    
+                    // In a real implementation, you would use pdf.js to render PDF pages as images
+                    // For this demo, we'll simulate the process with a timeout
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    progressBar.style.width = '30%';
+                    
+                    // Since we can't process PDFs directly in this demo, we'll show a message
+                    status.textContent = 'PDF processing requires server-side implementation.';
+                    textResult.textContent = 'For PDF processing, a server-side implementation is required to convert PDF pages to images before OCR. This demo focuses on image OCR.';
+                    
+                    scanBtn.disabled = false;
+                    scanBtn.innerHTML = '<span>Analyze Skills</span>';
+                    copyBtn.disabled = false;
+                    downloadBtn.disabled = false;
+                    return;
+                }
+                
+                // Process image with Tesseract.js
+                status.textContent = 'Processing image...';
+                
+                const worker = await Tesseract.createWorker('eng');
+                
+                await worker.recognize(currentFile, {
+                    logger: m => {
+                        if (m.status === 'recognizing text') {
+                            const progress = Math.round(m.progress * 100);
+                            progressBar.style.width = `${progress}%`;
+                            status.textContent = `Processing: ${progress}%`;
+                        }
+                    }
+                }).then(({ data: { text } }) => {
+                    extractedText = text;
+                    textResult.textContent = text || 'No text detected in the image.';
+                    
+                    // Analyze skills from the extracted text
+                    skillsData = analyzeSkills(text);
+                    displaySkills(skillsData);
+                    
+                    status.textContent = 'Skills analysis completed!';
+                    progressBar.style.width = '100%';
+                    
+                    // Enable action buttons
+                    copyBtn.disabled = false;
+                    downloadBtn.disabled = false;
+                });
+                
+                await worker.terminate();
+                
+            } catch (error) {
+                console.error('OCR Error:', error);
+                status.textContent = 'Error during OCR processing. Please try again.';
+                textResult.textContent = 'An error occurred while processing the document.';
+                skillsResult.innerHTML = '<p>An error occurred while analyzing skills.</p>';
+            } finally {
+                scanBtn.disabled = false;
+                scanBtn.innerHTML = '<span>Analyze Skills</span>';
+            }
+        }
+        
+        function analyzeSkills(text) {
+            // Define skill categories and keywords
+            const skillCategories = {
+                "Programming Languages": {
+                    keywords: ["python", "javascript", "java", "c++", "c#", "php", "ruby", "swift", "kotlin", "go", "rust", "typescript"],
+                    demand: "high"
+                },
+                "Web Development": {
+                    keywords: ["html", "css", "react", "angular", "vue", "node.js", "django", "flask", "express", "bootstrap", "jquery"],
+                    demand: "high"
+                },
+                "Database Technologies": {
+                    keywords: ["sql", "mysql", "postgresql", "mongodb", "redis", "oracle", "sqlite", "dynamodb", "cassandra"],
+                    demand: "high"
+                },
+                "Cloud & DevOps": {
+                    keywords: ["aws", "azure", "google cloud", "docker", "kubernetes", "jenkins", "terraform", "ansible", "ci/cd"],
+                    demand: "high"
+                },
+                "Data Science & AI": {
+                    keywords: ["machine learning", "deep learning", "tensorflow", "pytorch", "pandas", "numpy", "data analysis", "nlp", "computer vision"],
+                    demand: "high"
+                },
+                "Soft Skills": {
+                    keywords: ["communication", "leadership", "teamwork", "problem solving", "critical thinking", "adaptability", "time management"],
+                    demand: "medium"
+                },
+                "Project Management": {
+                    keywords: ["agile", "scrum", "kanban", "jira", "trello", "project planning", "risk management"],
+                    demand: "medium"
+                },
+                "Cybersecurity": {
+                    keywords: ["network security", "encryption", "vulnerability assessment", "penetration testing", "firewall", "siem"],
+                    demand: "high"
+                }
+            };
+            
+            const foundSkills = {};
+            const textLower = text.toLowerCase();
+            
+            // Search for skills in each category
+            for (const [category, data] of Object.entries(skillCategories)) {
+                foundSkills[category] = {
+                    skills: [],
+                    demand: data.demand
+                };
+                
+                for (const keyword of data.keywords) {
+                    if (textLower.includes(keyword.toLowerCase())) {
+                        foundSkills[category].skills.push(keyword);
+                    }
+                }
+            }
+            
+            return foundSkills;
+        }
+        
+        function displaySkills(skillsData) {
+            let skillsHTML = '';
+            
+            for (const [category, data] of Object.entries(skillsData)) {
+                if (data.skills.length > 0) {
+                    skillsHTML += `
+                        <div class="skill-category">
+                            <h3>${category}</h3>
+                            <div class="skill-tags">
+                    `;
+                    
+                    for (const skill of data.skills) {
+                        const demandClass = data.demand === 'high' ? 'high-demand' : 'medium-demand';
+                        skillsHTML += `<span class="skill-tag ${demandClass}">${skill}</span>`;
+                    }
+                    
+                    skillsHTML += `
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            
+            if (skillsHTML === '') {
+                skillsHTML = '<p>No skills detected. Try uploading a resume or job description with clearer text.</p>';
+            }
+            
+            skillsResult.innerHTML = skillsHTML;
+        }
+        
+        function copySkills() {
+            let skillsText = "SKILLS ANALYSIS REPORT\n\n";
+            
+            for (const [category, data] of Object.entries(skillsData)) {
+                if (data.skills.length > 0) {
+                    skillsText += `${category}:\n`;
+                    skillsText += `  - ${data.skills.join('\n  - ')}\n\n`;
+                }
+            }
+            
+            navigator.clipboard.writeText(skillsText)
+                .then(() => {
+                    const originalText = copyBtn.textContent;
+                    copyBtn.textContent = 'Copied!';
+                    setTimeout(() => {
+                        copyBtn.textContent = originalText;
+                    }, 2000);
+                })
+                .catch(err => {
+                    console.error('Failed to copy text: ', err);
+                    status.textContent = 'Failed to copy skills to clipboard.';
+                });
+        }
+        
+        function downloadReport() {
+            let reportText = "SKILLS ANALYSIS REPORT\n\n";
+            reportText += "Extracted Text:\n";
+            reportText += extractedText + "\n\n";
+            reportText += "Identified Skills:\n\n";
+            
+            for (const [category, data] of Object.entries(skillsData)) {
+                if (data.skills.length > 0) {
+                    reportText += `${category}:\n`;
+                    reportText += `  - ${data.skills.join('\n  - ')}\n\n`;
+                }
+            }
+            
+            const blob = new Blob([reportText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'skills-analysis-report.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        function clearAll() {
+            currentFile = null;
+            fileInput.value = '';
+            imagePreview.innerHTML = '';
+            textResult.textContent = 'Extracted text will appear here...';
+            skillsResult.innerHTML = '<p>Skills analysis will appear here...</p>';
+            status.textContent = 'Ready to scan';
+            progressBar.style.width = '0%';
+            scanBtn.disabled = true;
+            copyBtn.disabled = true;
+            downloadBtn.disabled = true;
+        }
+    </script>
 </body>
 </html>
