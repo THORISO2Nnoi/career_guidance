@@ -33,15 +33,34 @@
                 <div class="step" id="step2">
                     <h2>Step 2: Add Your Current Skills</h2>
                     <div class="skills-input">
+                        <p class="instruction">Select at least 2 skills from the dropdown:</p>
                         <div class="input-group">
-                            <input type="text" id="skillInput" placeholder="Enter a skill (e.g., problem solving)">
+                            <select id="skillSelect" class="skill-select">
+                                <option value="">-- Select a skill --</option>
+                                <option value="Digital Literacy">Digital Literacy</option>
+                                <option value="Problem Solving">Problem Solving</option>
+                                <option value="Communication Skills">Communication Skills</option>
+                                <option value="Python Programming">Python Programming</option>
+                                <option value="Data Literacy">Data Literacy</option>
+                                <option value="Critical Thinking">Critical Thinking</option>
+                                <option value="Design Thinking">Design Thinking</option>
+                                <option value="English Proficiency">English Proficiency</option>
+                                <option value="Collaboration">Collaboration</option>
+                                <option value="Spreadsheets">Spreadsheets (Excel/Google Sheets)</option>
+                                <option value="Leadership">Leadership</option>
+                                <option value="Time Management">Time Management</option>
+                                <option value="Research Skills">Research Skills</option>
+                                <option value="Public Speaking">Public Speaking</option>
+                                <option value="Creative Writing">Creative Writing</option>
+                            </select>
                             <button class="btn" id="addSkillBtn">Add Skill</button>
                         </div>
                         <div id="skillsList" class="skills-list"></div>
+                        <p class="skill-counter" id="skillCounter">Skills selected: <strong>0</strong> (minimum 2 required)</p>
                     </div>
                     <div class="btn-group">
                         <button class="btn prev-btn" id="step2Prev">Previous</button>
-                        <button class="btn next-btn" id="step2Next">Next</button>
+                        <button class="btn next-btn" id="step2Next" disabled>Next</button>
                     </div>
                 </div>
                 
@@ -50,6 +69,31 @@
                     <div class="recommendations">
                         <h3>Based on your results and current skills, we recommend developing these in-demand skills:</h3>
                         <div id="skillRecommendations" class="recommendations-list"></div>
+                        <div class="post-skill-entry">
+                            <h4>Want to add more skills?</h4>
+                            <div class="input-group">
+                                <select id="postSkillSelect" class="skill-select">
+                                    <option value="">-- Select a skill --</option>
+                                    <option value="Digital Literacy">Digital Literacy</option>
+                                    <option value="Problem Solving">Problem Solving</option>
+                                    <option value="Communication Skills">Communication Skills</option>
+                                    <option value="Python Programming">Python Programming</option>
+                                    <option value="Data Literacy">Data Literacy</option>
+                                    <option value="Critical Thinking">Critical Thinking</option>
+                                    <option value="Design Thinking">Design Thinking</option>
+                                    <option value="English Proficiency">English Proficiency</option>
+                                    <option value="Collaboration">Collaboration</option>
+                                    <option value="Spreadsheets">Spreadsheets (Excel/Google Sheets)</option>
+                                    <option value="Leadership">Leadership</option>
+                                    <option value="Time Management">Time Management</option>
+                                    <option value="Research Skills">Research Skills</option>
+                                    <option value="Public Speaking">Public Speaking</option>
+                                    <option value="Creative Writing">Creative Writing</option>
+                                </select>
+                                <button class="btn" id="postAddSkillBtn">Add & Save</button>
+                            </div>
+                            <p class="small">You can add skills after analysis and refresh recommendations based on market demand.</p>
+                        </div>
                     </div>
                     <div class="btn-group">
                         <button class="btn prev-btn" id="step3Prev">Previous</button>

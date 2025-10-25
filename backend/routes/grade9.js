@@ -2,15 +2,23 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const Student = require('../models/Student');
 const Results = require('../models/Results');
 const Recommendations = require('../models/Recommendations');
 const OCRService = require('../services/ocrService');
+const marketService = require('../services/marketService');
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'uploads/')
+        cb(null, uploadsDir)
     },
     filename: function (req, file, cb) {
         cb(null, Date.now() + '-' + file.originalname)
@@ -97,7 +105,8 @@ router.post('/upload-results', upload.single('resultsFile'), async (req, res) =>
         console.error('Error in grade9 upload:', error);
         res.status(500).json({ 
             success: false, 
-            error: error.message 
+            error: error.message || 'An error occurred while processing your results',
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
 });
@@ -273,40 +282,139 @@ function analyzeGrade9Performance(subjects, overallAverage) {
 
 // Generate skill recommendations
 async function generateSkillRecommendations(subjects, average, currentSkills) {
-    const allSkills = [
-        { 
-            name: "Digital Literacy", 
-            description: "Basic computer skills and understanding of digital tools", 
-            demandLevel: "High", 
-            category: "Technical",
-            priority: "Essential",
-            resources: ["Basic computer courses", "Online tutorials", "School computer lab"]
-        },
-        { 
-            name: "Problem Solving", 
-            description: "Analytical thinking and creative solution development", 
-            demandLevel: "High", 
-            category: "Cognitive",
-            priority: "Essential",
-            resources: ["Math puzzles", "Logic games", "Science projects"]
-        },
-        { 
-            name: "Communication Skills", 
-            description: "Verbal and written communication in multiple languages", 
-            demandLevel: "High", 
-            category: "Social",
-            priority: "Essential",
-            resources: ["Debate club", "Writing exercises", "Reading books"]
-        }
-    ];
+    // currentSkills may come as array or comma-separated
+    let owned = [];
+    if (Array.isArray(currentSkills)) owned = currentSkills.map(s => s.toLowerCase());
+    else if (typeof currentSkills === 'string') owned = currentSkills.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 
-    // Filter out skills the student already has
-    let filteredSkills = allSkills.filter(skill => 
-        !currentSkills.includes(skill.name.toLowerCase())
-    );
+    // Map student's strengths to skill categories (simple heuristic)
+    const subjectSkillMap = {
+        math: ['Problem Solving', 'Spreadsheets', 'Data Literacy'],
+        english: ['Communication Skills', 'English Proficiency'],
+        science: ['Problem Solving', 'Critical Thinking'],
+        computer: ['Digital Literacy', 'Python Programming'],
+        technology: ['Digital Literacy', 'Design Thinking'],
+        accounting: ['Spreadsheets', 'Data Literacy']
+    };
 
-    return filteredSkills.slice(0, 3);
+    // Collect candidate skills based on strong subjects
+    const strongSubjects = subjects.filter(s => s.mark >= 70).map(s => s.name.toLowerCase());
+    let candidates = [];
+    strongSubjects.forEach(sub => {
+        Object.keys(subjectSkillMap).forEach(key => {
+            if (sub.includes(key)) {
+                candidates = candidates.concat(subjectSkillMap[key]);
+            }
+        });
+    });
+
+    // If no candidates found, fall back to top market skills
+    if (candidates.length === 0) {
+        const top = marketService.getTopSkills(owned, 5).map(s => s.name);
+        candidates = candidates.concat(top);
+    }
+
+    // Deduplicate and exclude already owned
+    candidates = Array.from(new Set(candidates)).filter(c => !owned.includes(c.toLowerCase()));
+
+    // Score candidates by combining market demand and simple subject-relevance boost
+    const scored = candidates.map(name => {
+        const demand = marketService.getDemandScore(name);
+        // boost if candidate matches student's strong subjects (small boost)
+        const relevanceBoost = strongSubjects.some(sub => name.toLowerCase().includes(sub)) ? 5 : 0;
+        return { name, score: demand + relevanceBoost, demandLevel: demand };
+    });
+
+    // Sort by score and return top 5 with helpful metadata
+    scored.sort((a, b) => b.score - a.score);
+
+    const marketAll = marketService.getAll();
+
+    const recommended = scored.slice(0, 5).map(s => {
+        const meta = marketAll.find(m => m.name.toLowerCase() === s.name.toLowerCase()) || { description: '', category: 'General' };
+        return {
+            name: s.name,
+            description: meta.description || 'Skill to develop',
+            demandLevel: s.demandLevel >= 85 ? 'High' : s.demandLevel >= 70 ? 'Medium' : 'Low',
+            category: meta.category || 'General',
+            suggestedResources: meta.resources || []
+        };
+    });
+
+    return recommended;
 }
+
+// Endpoint to add skills for a student (append or set)
+router.post('/students/:studentId/skills', async (req, res) => {
+    try {
+        const { studentId } = req.params;
+        const { skills, replace } = req.body; // skills: array or comma-separated string
+
+        if (!skills) return res.status(400).json({ success: false, error: 'No skills provided' });
+
+        const newSkills = Array.isArray(skills) ? skills : String(skills).split(',').map(s => s.trim()).filter(Boolean);
+
+        const student = await Student.findOne({ studentId });
+        if (!student) return res.status(404).json({ success: false, error: 'Student not found' });
+
+        if (replace) {
+            student.skills = newSkills;
+        } else {
+            const existing = student.skills || [];
+            const merged = Array.from(new Set(existing.concat(newSkills)));
+            student.skills = merged;
+        }
+
+        await student.save();
+
+        // Recompute recommendations
+        const latestResults = await Results.findOne({ studentId }).sort({ uploadedAt: -1 });
+        const subjects = latestResults ? latestResults.subjects : [];
+        const overallAverage = latestResults ? latestResults.overallAverage : 0;
+        const recommendations = await generateSkillRecommendations(subjects, overallAverage, student.skills);
+
+        // Save recommendations
+        await Recommendations.findOneAndUpdate(
+            { studentId },
+            { $set: { currentSkills: student.skills, recommendedSkills: recommendations, grade: student.grade } },
+            { upsert: true }
+        );
+
+        res.json({ success: true, skills: student.skills, recommendations });
+
+    } catch (error) {
+        console.error('Error adding skills:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Endpoint to get recommendations for a student
+router.get('/students/:studentId/recommendations', async (req, res) => {
+    try {
+        const { studentId } = req.params;
+        const student = await Student.findOne({ studentId });
+        if (!student) return res.status(404).json({ success: false, error: 'Student not found' });
+
+        const latestResults = await Results.findOne({ studentId }).sort({ uploadedAt: -1 });
+        const subjects = latestResults ? latestResults.subjects : [];
+        const overallAverage = latestResults ? latestResults.overallAverage : 0;
+
+        const recommendations = await generateSkillRecommendations(subjects, overallAverage, student.skills);
+
+        // Update stored recommendations as well
+        await Recommendations.findOneAndUpdate(
+            { studentId },
+            { $set: { currentSkills: student.skills, recommendedSkills: recommendations, grade: student.grade } },
+            { upsert: true }
+        );
+
+        res.json({ success: true, studentId, currentSkills: student.skills, recommendations });
+
+    } catch (error) {
+        console.error('Error fetching recommendations:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
 
 // Generate Grade 9 summary
 function generateGrade9Summary(subjects, overallAverage, apsScore, recommendations) {

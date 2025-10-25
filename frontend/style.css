@@ -221,6 +221,36 @@ footer {
     border-radius: 0 5px 5px 0;
 }
 
+/* Skill Select Dropdown */
+.skill-select {
+    flex: 1;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 5px 0 0 5px;
+    font-size: 1rem;
+    transition: border-color 0.3s;
+}
+
+.skill-select:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+.skill-counter {
+    margin-top: 15px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    text-align: center;
+    font-size: 0.95rem;
+}
+
+.instruction {
+    margin-bottom: 15px;
+    color: #555;
+    font-weight: 500;
+}
+
 .skills-list {
     display: flex;
     flex-wrap: wrap;

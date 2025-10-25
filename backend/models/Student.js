@@ -25,6 +25,11 @@ const studentSchema = new mongoose.Schema({
         },
         phone: String
     },
+    // Skills the student has listed or added
+    skills: {
+        type: [String],
+        default: []
+    },
     createdAt: {
         type: Date,
         default: Date.now

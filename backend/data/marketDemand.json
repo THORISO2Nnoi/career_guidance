@@ -1,0 +1,12 @@
+[
+  { "name": "Digital Literacy", "demandScore": 95, "category": "Technical", "description": "Basic computer, web and office skills" },
+  { "name": "Problem Solving", "demandScore": 92, "category": "Cognitive", "description": "Analytical thinking and logic" },
+  { "name": "Communication Skills", "demandScore": 90, "category": "Social", "description": "Verbal and written communication" },
+  { "name": "Python Programming", "demandScore": 85, "category": "Technical", "description": "General purpose programming for data and automation" },
+  { "name": "Data Literacy", "demandScore": 83, "category": "Technical", "description": "Understanding and interpreting data" },
+  { "name": "Critical Thinking", "demandScore": 80, "category": "Cognitive", "description": "Evaluating arguments and reasoning" },
+  { "name": "Design Thinking", "demandScore": 75, "category": "Creative", "description": "Problem framing and solution design" },
+  { "name": "English Proficiency", "demandScore": 78, "category": "Social", "description": "Strong English reading and writing skills" },
+  { "name": "Collaboration", "demandScore": 77, "category": "Social", "description": "Teamwork and project skills" },
+  { "name": "Spreadsheets", "demandScore": 74, "category": "Technical", "description": "Excel / Google Sheets skills" }
+]

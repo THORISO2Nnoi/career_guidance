@@ -1,0 +1,13 @@
+{
+  "name": "career-guidance-portal-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node backend/server.js",
+    "start:backend": "node backend/server.js",
+    "dev:backend": "nodemon backend/server.js"
+  },
+  "description": "Root package.json to run backend from the workspace root",
+  "author": "",
+  "license": "MIT"
+}

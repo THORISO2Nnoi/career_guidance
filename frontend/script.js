@@ -1,6 +1,9 @@
 // Global variables
 let currentSkills = [];
 let uploadedFile = null;
+let lastStudentId = null;
+let lastStudentName = null;
+let lastStudentEmail = null;
 const API_BASE = window.location.origin + '/api';
 
 // DOM Content Loaded
@@ -16,7 +19,8 @@ function initGrade9Page() {
     const step1Next = document.getElementById('step1Next');
     const resultsFile = document.getElementById('resultsFile');
     const addSkillBtn = document.getElementById('addSkillBtn');
-    const skillInput = document.getElementById('skillInput');
+    const skillSelect = document.getElementById('skillSelect');
+    const step2Next = document.getElementById('step2Next');
     
     // File upload handling
     if (resultsFile && step1Next) {
@@ -41,9 +45,12 @@ function initGrade9Page() {
         });
     }
     
-    const step2Next = document.getElementById('step2Next');
     if (step2Next) {
         step2Next.addEventListener('click', async function() {
+            if (currentSkills.length < 2) {
+                alert('Please select at least 2 skills before proceeding.');
+                return;
+            }
             await submitGrade9Data();
         });
     }
@@ -64,25 +71,44 @@ function initGrade9Page() {
         });
     }
     
-    // Skills management
-    if (addSkillBtn) {
-        addSkillBtn.addEventListener('click', addSkill);
+    // Skills management with dropdown
+    if (addSkillBtn && skillSelect) {
+        addSkillBtn.addEventListener('click', addSkillFromDropdown);
     }
     
-    if (skillInput) {
-        skillInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                addSkill();
+    if (skillSelect) {
+        skillSelect.addEventListener('change', function() {
+            if (this.value) {
+                addSkillFromDropdown();
             }
         });
     }
     
-    function addSkill() {
-        const skill = skillInput.value.trim();
+    function addSkillFromDropdown() {
+        const skill = skillSelect.value.trim();
         if (skill && !currentSkills.includes(skill.toLowerCase())) {
             currentSkills.push(skill.toLowerCase());
             renderSkillsList();
-            skillInput.value = '';
+            skillSelect.value = ''; // Reset dropdown
+            updateSkillCounter();
+            // Enable Next button if minimum 2 skills
+            if (step2Next && currentSkills.length >= 2) {
+                step2Next.disabled = false;
+            }
+        } else if (skill && currentSkills.includes(skill.toLowerCase())) {
+            alert('This skill has already been added.');
+            skillSelect.value = '';
+        }
+    }
+    
+    function updateSkillCounter() {
+        const counter = document.getElementById('skillCounter');
+        if (counter) {
+            const count = currentSkills.length;
+            const counterText = count >= 2 
+                ? `<strong style="color: green;">${count}</strong> (minimum met ✓)` 
+                : `<strong style="color: red;">${count}</strong> (minimum 2 required)`;
+            counter.innerHTML = `Skills selected: ${counterText}`;
         }
     }
     
@@ -99,11 +125,16 @@ function initGrade9Page() {
             `;
             skillsList.appendChild(skillElement);
         });
+        updateSkillCounter();
     }
     
     window.removeSkill = function(skill) {
         currentSkills = currentSkills.filter(s => s !== skill);
         renderSkillsList();
+        // Disable Next button if below minimum
+        if (step2Next && currentSkills.length < 2) {
+            step2Next.disabled = true;
+        }
     };
 }
 
@@ -123,7 +154,12 @@ async function submitGrade9Data() {
         step2Next.disabled = true;
         step2Next.textContent = 'Processing...';
 
-        // Create form data for file upload
+    // Save for later (allow adding skills after analysis)
+    lastStudentId = studentId;
+    lastStudentName = studentName;
+    lastStudentEmail = studentEmail;
+
+    // Create form data for file upload
         const formData = new FormData();
         formData.append('resultsFile', uploadedFile);
         formData.append('studentId', studentId);
@@ -148,7 +184,7 @@ async function submitGrade9Data() {
         
     } catch (error) {
         console.error('Error submitting grade 9 data:', error);
-        alert('Error: ' + error.message);
+        alert('Error processing your results: ' + error.message + '\n\nPlease try again or contact support if the problem persists.');
     } finally {
         // Reset button
         const step2Next = document.getElementById('step2Next');
@@ -226,7 +262,7 @@ function displayGrade9Results(data) {
                 </div>
                 <p class="skill-description">${skill.description}</p>
                 <div class="skill-resources">
-                    <strong>Resources:</strong> ${skill.resources}
+                    <strong>Resources:</strong> ${(skill.suggestedResources || skill.resources || []).join(', ')}
                 </div>
             </div>
         `;
@@ -345,3 +381,61 @@ function initGrade11_12Page() {
         });
     }
 }
+
+// Add skill after analysis and save to backend for the current student
+document.addEventListener('click', function(e) {
+    if (e.target && e.target.id === 'postAddSkillBtn') {
+        const select = document.getElementById('postSkillSelect');
+        if (!select) return;
+        const skill = select.value.trim();
+        if (!skill) return alert('Please select a skill from the dropdown');
+        // append to currentSkills and send to backend
+        if (!lastStudentId) return alert('No student session found. Please analyze your results first.');
+
+        // Update local list and save
+        if (!currentSkills.includes(skill.toLowerCase())) {
+            currentSkills.push(skill.toLowerCase());
+        } else {
+            alert('This skill has already been added.');
+            select.value = '';
+            return;
+        }
+
+        // Call backend to save skills (replace=false so it appends)
+        fetch(`${API_BASE}/grade9/students/${encodeURIComponent(lastStudentId)}/skills`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ skills: currentSkills })
+        })
+        .then(resp => resp.json())
+        .then(result => {
+            if (result.success) {
+                // Refresh recommendations area with returned recommendations
+                if (result.recommendations) {
+                    displayGrade9Results({
+                        summary: { performanceEmoji: ' ', overallAverage: result.overallAverage || 0, performanceLevel: '' },
+                        apsScore: result.apsScore || 0,
+                        subjects: result.subjects || [],
+                        recommendations: result.recommendations
+                    });
+                } else {
+                    // If backend returned skills but not full recs, fetch recommendations endpoint
+                    fetch(`${API_BASE}/grade9/students/${encodeURIComponent(lastStudentId)}/recommendations`)
+                        .then(r=>r.json())
+                        .then(rdata => { if (rdata.success) displayGrade9Results({ summary: { performanceEmoji: ' ', overallAverage: rdata.overallAverage || 0, performanceLevel: '' }, apsScore: rdata.apsScore || 0, subjects: rdata.subjects || [], recommendations: rdata.recommendations }); })
+                        .catch(err => console.error('Failed to refresh recommendations:', err));
+                }
+
+                // Reset select and show confirmation
+                select.value = '';
+                alert('✓ Skill added successfully! Recommendations refreshed.');
+            } else {
+                alert('Failed to save skills: ' + (result.error || 'unknown'));
+            }
+        })
+        .catch(err => {
+            console.error('Error saving skills:', err);
+            alert('Error saving skills: ' + err.message);
+        });
+    }
+});
